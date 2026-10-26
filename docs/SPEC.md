@@ -215,6 +215,11 @@ Automated Playwright bench running the same corpus with Sombre and with Dark Rea
 - Logged-in sites (Gmail, Notion) use a **dedicated test account** and a persistent
   Playwright profile — never a personal account. Banking sites: local only, never archived.
 - The bench outputs a side-by-side comparison report (reusable for the Store listing).
+- The contrast criterion judges pages rendered by an engine. Native dark themes are
+  measured but not judged: they are deliberately left untouched (§2), and some fail
+  Lc 45 on their own muted text (GitHub ≈ Lc 44).
+- Fixtures are served over HTTPS on public-looking hostnames mapped to local servers:
+  extensions special-case `http:`, ports, IPs and local hostnames. See `bench/README.md`.
 
 ---
 
