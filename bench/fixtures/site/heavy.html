@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Fixture — heavy page (stress for toggle and cost)</title>
+    <link rel="stylesheet" href="common.css" />
+    <script>
+      // ~2000 distinct color rules, like a large design system bundle.
+      (() => {
+        const rules = [];
+        for (let i = 0; i < 1000; i++) {
+          const h = (i * 37) % 360;
+          rules.push(`.c${i} { color: hsl(${h} 45% 28%); background: hsl(${h} 60% 96%); border-color: hsl(${h} 30% 85%); }`);
+          rules.push(`.c${i}:hover { background: hsl(${h} 60% 90%); }`);
+        }
+        const style = document.createElement('style');
+        style.textContent = rules.join('\n');
+        document.head.appendChild(style);
+      })();
+    </script>
+    <style>
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 8px;
+      }
+      .cell {
+        padding: 8px;
+        border: 1px solid;
+        border-radius: 4px;
+        font-size: 13px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+      }
+      td {
+        padding: 4px 8px;
+        border-bottom: 1px solid #eee;
+        color: #333;
+      }
+    </style>
+  </head>
+  <body>
+    <header class="site"><span class="logo">Heavy</span></header>
+    <main>
+      <div class="grid" id="grid"></div>
+      <table><tbody id="rows"></tbody></table>
+    </main>
+    <script>
+      const grid = document.getElementById('grid');
+      const cells = [];
+      for (let i = 0; i < 1000; i++) cells.push(`<div class="cell c${i}">Item ${i}</div>`);
+      grid.innerHTML = cells.join('');
+
+      const rows = [];
+      for (let i = 0; i < 3000; i++) rows.push(`<tr><td>${i}</td><td>Row label ${i}</td><td class="muted">detail</td></tr>`);
+      document.getElementById('rows').innerHTML = rows.join('');
+    </script>
+  </body>
+</html>

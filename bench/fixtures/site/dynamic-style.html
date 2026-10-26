@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Fixture — dynamically added styles (SPA)</title>
+    <link rel="stylesheet" href="common.css" />
+  </head>
+  <body>
+    <header class="site"><span class="logo">Single Page App</span></header>
+    <main id="root"><p class="muted">Loading…</p></main>
+    <script>
+      // Mimics an SPA: styles and content arrive after the initial render.
+      setTimeout(() => {
+        const style = document.createElement('style');
+        style.textContent = `
+          .toolbar { display: flex; gap: 8px; padding: 8px; background: #eef1f6; border-radius: 8px; }
+          .toolbar button { background: #fff; color: #2d3748; border: 1px solid #cbd5e0; padding: 6px 12px; border-radius: 6px; }
+          .list { list-style: none; padding: 0; }
+          .list li { padding: 12px; border-bottom: 1px solid #edf2f7; color: #2d3748; background: #fff; }
+          .list li.selected { background: #ebf4ff; color: #2c5282; }
+        `;
+        document.head.appendChild(style);
+
+        document.getElementById('root').innerHTML = `
+          <div class="toolbar"><button>Archive</button><button>Delete</button><button>Mark read</button></div>
+          <ul class="list">
+            <li>Weekly report is ready</li>
+            <li class="selected">Design review moved to Thursday</li>
+            <li>Your invoice #1234</li>
+            <li>Welcome to the team</li>
+          </ul>
+          <div class="cards">
+            <div class="card"><h3>Late card</h3><p class="meta">Styled by a stylesheet added later</p></div>
+          </div>`;
+      }, 300);
+
+      setTimeout(() => {
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = 'https://cdn.sombre-assets.dev/theme.css';
+        document.head.appendChild(link);
+      }, 800);
+    </script>
+  </body>
+</html>

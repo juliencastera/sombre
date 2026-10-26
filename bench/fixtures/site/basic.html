@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Fixture — basic article</title>
+    <link rel="stylesheet" href="common.css" />
+    <style>
+      h1 {
+        font-size: 36px;
+        color: #111;
+      }
+      blockquote {
+        margin: 16px 0;
+        padding: 8px 16px;
+        border-left: 4px solid #d0d0d5;
+        background: #fafafa;
+        color: #444;
+      }
+      pre {
+        padding: 16px;
+        background: #f6f8fa;
+        border: 1px solid #e1e4e8;
+        border-radius: 6px;
+        color: #24292e;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      th,
+      td {
+        padding: 8px 12px;
+        border-bottom: 1px solid #e5e5e5;
+        text-align: left;
+      }
+      th {
+        background: #f0f0f3;
+        color: #333;
+      }
+      tr:nth-child(even) td {
+        background: #fbfbfc;
+      }
+      .btn {
+        display: inline-block;
+        padding: 8px 16px;
+        border-radius: 6px;
+        border: 1px solid transparent;
+        font: inherit;
+      }
+      .btn-primary {
+        background: #0b5fff;
+        color: #fff;
+      }
+      .btn-secondary {
+        background: #fff;
+        color: #333;
+        border-color: #ccc;
+      }
+      input[type="text"] {
+        padding: 8px;
+        border: 1px solid #bbb;
+        border-radius: 4px;
+        background: #fff;
+        color: #222;
+      }
+    </style>
+  </head>
+  <body>
+    <header class="site">
+      <span class="logo">Daily Notes</span>
+      <a href="#">Home</a><a href="#">Archive</a><a href="#">About</a>
+    </header>
+    <main>
+      <h1>The quiet cost of bright screens</h1>
+      <p class="muted">Published March 3 · 6 min read</p>
+      <p>
+        Long reading sessions on bright backgrounds are tiring. This paragraph is ordinary body text with a
+        <a href="#">regular link</a> and some <strong>bold emphasis</strong> to check weight handling.
+      </p>
+      <blockquote>Contrast is not a style preference; it is the reason text is readable at all.</blockquote>
+      <pre><code>function invert(color) {
+  return 255 - color;
+}</code></pre>
+      <table>
+        <thead>
+          <tr><th>Setting</th><th>Value</th><th>Notes</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Brightness</td><td>100</td><td class="muted">Default</td></tr>
+          <tr><td>Contrast</td><td>110</td><td class="muted">Slightly boosted</td></tr>
+          <tr><td>Sepia</td><td>0</td><td class="muted">Off</td></tr>
+          <tr><td>Grayscale</td><td>0</td><td class="muted">Off</td></tr>
+        </tbody>
+      </table>
+      <p>
+        <button class="btn btn-primary">Subscribe</button>
+        <button class="btn btn-secondary">Later</button>
+        <input type="text" placeholder="Your email" />
+      </p>
+    </main>
+    <footer class="site">© Daily Notes · Terms · Privacy</footer>
+  </body>
+</html>

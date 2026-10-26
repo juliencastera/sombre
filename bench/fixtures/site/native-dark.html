@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="color-scheme" content="light dark" />
+    <title>Fixture — site with a native dark theme</title>
+    <style>
+      :root {
+        --bg: #ffffff;
+        --fg: #1f2328;
+        --muted: #59636e;
+        --surface: #f6f8fa;
+        --border: #d1d9e0;
+        --accent: #0969da;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #0d1117;
+          --fg: #e6edf3;
+          --muted: #9198a1;
+          --surface: #151b23;
+          --border: #3d444d;
+          --accent: #4493f8;
+        }
+      }
+      body {
+        margin: 0;
+        font: 16px/1.5 system-ui, sans-serif;
+        background: var(--bg);
+        color: var(--fg);
+      }
+      header {
+        padding: 12px 32px;
+        background: var(--surface);
+        border-bottom: 1px solid var(--border);
+      }
+      main {
+        max-width: 880px;
+        margin: 0 auto;
+        padding: 24px 32px;
+      }
+      .muted {
+        color: var(--muted);
+      }
+      a {
+        color: var(--accent);
+      }
+      .box {
+        padding: 16px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+      }
+    </style>
+  </head>
+  <body>
+    <header><strong>Native Theme Co.</strong></header>
+    <main>
+      <h1>This site ships its own dark theme</h1>
+      <p class="muted">It follows prefers-color-scheme. A good extension should detect it and leave it alone.</p>
+      <div class="box">Surface box with <a href="#">an accent link</a>.</div>
+    </main>
+  </body>
+</html>

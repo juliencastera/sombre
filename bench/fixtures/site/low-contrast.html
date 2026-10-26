@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Fixture — contrast traps</title>
+    <link rel="stylesheet" href="common.css" />
+    <style>
+      .grey-on-grey {
+        background: #eeeeee;
+        color: #999999;
+        padding: 12px;
+      }
+      .faint {
+        color: #aaaaaa;
+      }
+      .brand-bar {
+        background: #e60023;
+        color: #ffffff;
+        padding: 12px 16px;
+        font-weight: 600;
+      }
+      .yellow-alert {
+        background: #fff3cd;
+        color: #856404;
+        padding: 12px;
+      }
+      .pastel {
+        display: flex;
+        gap: 8px;
+      }
+      .pastel span {
+        padding: 4px 10px;
+        border-radius: 4px;
+      }
+      .p1 {
+        background: #d1fae5;
+        color: #065f46;
+      }
+      .p2 {
+        background: #e0e7ff;
+        color: #3730a3;
+      }
+      .p3 {
+        background: #fee2e2;
+        color: #991b1b;
+      }
+      .overlay-wrap {
+        position: relative;
+        background: #ffffff;
+        padding: 24px;
+      }
+      .overlay {
+        background: rgba(0, 0, 0, 0.05);
+        padding: 12px;
+        color: #555555;
+      }
+      .gradient-hero {
+        background: linear-gradient(90deg, #ffffff, #dbeafe);
+        color: #1e3a8a;
+        padding: 24px;
+      }
+      button[disabled] {
+        background: #f3f3f3;
+        color: #b5b5b5;
+        border: 1px solid #e0e0e0;
+        padding: 8px 14px;
+      }
+      .small-light {
+        font-size: 12px;
+        color: #9a9a9a;
+      }
+      .thin {
+        font-weight: 300;
+        color: #808080;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="brand-bar">Brand bar with white text on saturated red</div>
+    <main>
+      <p class="grey-on-grey">Grey text on a light grey panel (already weak in light mode).</p>
+      <p class="faint">Faint grey paragraph on white.</p>
+      <div class="yellow-alert">Yellow alert with brown text.</div>
+      <p class="pastel"><span class="p1">Success</span><span class="p2">Info</span><span class="p3">Error</span></p>
+      <div class="overlay-wrap"><div class="overlay">Text on a semi-transparent overlay.</div></div>
+      <div class="gradient-hero">Text over a gradient background.</div>
+      <p><button disabled>Disabled button</button></p>
+      <p class="small-light">Small light caption text, 12px.</p>
+      <p class="thin">Thin weight text in mid grey.</p>
+    </main>
+  </body>
+</html>

@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Fixture — open Shadow DOM</title>
+    <link rel="stylesheet" href="common.css" />
+  </head>
+  <body>
+    <header class="site"><span class="logo">Web Components</span></header>
+    <main>
+      <x-card heading="Shadow card" body="Styled by a style element inside an open shadow root."></x-card>
+      <x-adopted-card heading="Adopted shadow card" body="Styled by a constructed sheet adopted by the shadow root."></x-adopted-card>
+      <x-outer></x-outer>
+    </main>
+    <script>
+      customElements.define(
+        'x-card',
+        class extends HTMLElement {
+          connectedCallback() {
+            const root = this.attachShadow({ mode: 'open' });
+            root.innerHTML = `
+              <style>
+                .card { background: #ffffff; color: #263238; border: 1px solid #cfd8dc; border-radius: 8px; padding: 16px; margin-bottom: 12px; }
+                h3 { margin: 0 0 4px; color: #102027; }
+                p { margin: 0; color: #607d8b; }
+              </style>
+              <div class="card"><h3>${this.getAttribute('heading')}</h3><p>${this.getAttribute('body')}</p></div>`;
+          }
+        },
+      );
+
+      const adoptedSheet = new CSSStyleSheet();
+      adoptedSheet.replaceSync(`
+        .card { background: #f1f8e9; color: #33691e; border-radius: 8px; padding: 16px; margin-bottom: 12px; }
+        h3 { margin: 0 0 4px; }`);
+      customElements.define(
+        'x-adopted-card',
+        class extends HTMLElement {
+          connectedCallback() {
+            const root = this.attachShadow({ mode: 'open' });
+            root.adoptedStyleSheets = [adoptedSheet];
+            root.innerHTML = `<div class="card"><h3>${this.getAttribute('heading')}</h3><p>${this.getAttribute('body')}</p></div>`;
+          }
+        },
+      );
+
+      // Nested shadow roots, attached after a delay (lazy component).
+      customElements.define(
+        'x-outer',
+        class extends HTMLElement {
+          connectedCallback() {
+            setTimeout(() => {
+              const root = this.attachShadow({ mode: 'open' });
+              root.innerHTML = `
+                <style>.wrap { background: #eceff1; padding: 12px; border-radius: 8px; color: #37474f; }</style>
+                <div class="wrap">Outer shadow root (late) <x-card heading="Nested" body="Shadow root inside a shadow root."></x-card></div>`;
+            }, 400);
+          }
+        },
+      );
+    </script>
+  </body>
+</html>

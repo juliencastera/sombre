@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Fixture — inline styles and SVG attributes</title>
+    <link rel="stylesheet" href="common.css" />
+  </head>
+  <body>
+    <header class="site"><span class="logo">Inline</span></header>
+    <main>
+      <div style="background: #ffffff; color: #333333; padding: 16px; border: 1px solid #dddddd">
+        Panel styled only through the style attribute.
+      </div>
+      <p style="color: #888888">Muted paragraph via style attribute.</p>
+      <div style="background-color: rgb(250, 250, 240); padding: 12px">
+        <span style="color: rgb(120, 80, 0)">Brownish note on cream.</span>
+      </div>
+
+      <p>
+        <svg width="32" height="32" viewBox="0 0 32 32" aria-label="icon-fill">
+          <circle cx="16" cy="16" r="14" fill="#000000" />
+          <path d="M10 16h12" stroke="#ffffff" stroke-width="3" />
+        </svg>
+        <svg width="32" height="32" viewBox="0 0 32 32" aria-label="icon-stroke">
+          <rect x="4" y="4" width="24" height="24" fill="none" stroke="#333333" stroke-width="2" />
+        </svg>
+        <svg width="120" height="32" viewBox="0 0 120 32" aria-label="text-svg">
+          <text x="0" y="22" fill="#222222" font-size="18">SVG text</text>
+        </svg>
+      </p>
+
+      <div id="late" style="background: #ffffff; color: #444444; padding: 12px">
+        This element's inline style changes after load.
+      </div>
+    </main>
+    <script>
+      setTimeout(() => {
+        const late = document.getElementById('late');
+        late.style.background = '#f4f6ff';
+        late.style.color = '#1a2a6c';
+        late.textContent = 'Inline style updated by script.';
+      }, 600);
+    </script>
+  </body>
+</html>

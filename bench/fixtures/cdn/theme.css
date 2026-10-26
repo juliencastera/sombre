@@ -1,0 +1,59 @@
+/* Served from a different origin without CORS headers, like most CDN stylesheets:
+   `cssRules` is unreadable from the page, so an extension must fetch it itself. */
+.cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.card {
+  padding: 16px;
+  background: #ffffff;
+  border: 1px solid #e2e4e9;
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+  color: #2b2f36;
+}
+
+.card h3 {
+  margin: 0 0 8px;
+  color: #11151c;
+}
+
+.card .meta {
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.alert {
+  margin: 16px 0;
+  padding: 12px 16px;
+  border-radius: 6px;
+}
+
+.alert-info {
+  background: #e7f1ff;
+  color: #0c3d7a;
+  border: 1px solid #b6d4fe;
+}
+
+.alert-warning {
+  background: #fff3cd;
+  color: #664d03;
+  border: 1px solid #ffecb5;
+}
+
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  background: #eef0f3;
+  color: #3b4250;
+}
+
+.page-banner {
+  padding: 32px;
+  background: linear-gradient(135deg, #f5f7fa 0%, #e4e9f2 100%);
+  color: #1d2433;
+}
