@@ -1,0 +1,22 @@
+/*
+ * Sombre base layer for "Auto" mode: base-dark.css, applied only while the OS
+ * is in dark mode, so no script has to decide before first paint.
+ * Keep in sync with base-dark.css.
+ */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-sombre="off"]) {
+    color-scheme: dark !important;
+  }
+
+  :where(:root:not([data-sombre="off"])) {
+    background-color: #161616;
+    color: #f2f2f2;
+  }
+
+  :root:not([data-sombre="off"]):not([data-sombre-ready]),
+  :root:not([data-sombre="off"]):not([data-sombre-ready]) * {
+    background-color: #161616 !important;
+    color: #f2f2f2 !important;
+    border-color: #333333 !important;
+  }
+}

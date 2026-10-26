@@ -1,0 +1,22 @@
+/*
+ * Sombre base layer (spec §2, layer 1). Injected by the browser before first
+ * paint on every page where dark mode applies; see src/entrypoints/background.ts.
+ * Colors match transformColor(): #fff as background, #000 as text, #ddd as border.
+ * Keep in sync with base-auto.css.
+ */
+:root:not([data-sombre="off"]) {
+  color-scheme: dark !important;
+}
+
+:where(:root:not([data-sombre="off"])) {
+  background-color: #161616;
+  color: #f2f2f2;
+}
+
+/* Until the engine has generated the precise theme, nothing may paint light. */
+:root:not([data-sombre="off"]):not([data-sombre-ready]),
+:root:not([data-sombre="off"]):not([data-sombre-ready]) * {
+  background-color: #161616 !important;
+  color: #f2f2f2 !important;
+  border-color: #333333 !important;
+}
