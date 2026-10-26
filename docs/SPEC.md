@@ -124,10 +124,11 @@ stored per site and excluded from the base layer registration.
 | Case | Solution |
 |---|---|
 | Cross-origin stylesheets (CDN) | Fetch via service worker (`<all_urls>` host permission), parse ourselves |
-| Inline styles & SVG attributes (`style=`, `fill=`, `stroke=`) | Batched `MutationObserver` on attributes |
+| Inline styles & SVG attributes (`style=`, `fill=`, `stroke=`) | Batched `MutationObserver` on attributes; rules select the exact declaration text (`[style*=";color: #333"]`) with `!important`, appended incrementally — the page DOM is never modified. SVG artwork attributes use an `invert` role (light fills → dark, dark → light) |
 | Dynamically added `<style>`/`<link>` (SPAs) | `MutationObserver` on head/document |
 | CSS-in-JS via `insertRule` (styled-components, emotion) | MAIN-world script patching `CSSStyleSheet.prototype.insertRule` / `replace(Sync)` |
-| Open Shadow DOM | Patch `attachShadow`, attach the shared adopted sheet |
+| Open Shadow DOM | Patch `attachShadow`; each shadow root is a scope adopting its own mirrors (sources shared between roots share one mirror), plus a pre-ready guard sheet since the base layer cannot pierce shadow boundaries |
+| Utility CSS (Tailwind v3 `rgb(… / var(--tw-bg-opacity))`, shadcn/ui `hsl(var(--background))`) | Channels transformed, alpha expressions kept; channel variables get per-role twins in the same channel format |
 | Same-origin iframes | `all_frames: true` |
 | Legacy color attributes (`bgcolor`, `<font color>`, `<body text>`) | Per-value `:where([bgcolor="…" i])` rules (zero specificity, like the presentational hints they replace) |
 
@@ -135,6 +136,14 @@ stored per site and excluded from the base layer registration.
 bright images). Gradient colors are already transformed since M1.
 
 **Out of scope:** `<canvas>` apps (Docs, Figma), closed shadow roots, built-in PDF viewer.
+
+**Known gaps:** `adoptedStyleSheets.push()` (observable array mutation, no setter to hook)
+is only picked up on the next rebuild; channel variables in RGB form are recognized only
+as three bare numbers; Gmail and Notion are untested until a test account is set up.
+
+Each page stylesheet has its **own mirror sheet** (spec §4): a CSS-in-JS `insertRule`
+regenerates only that mirror, in the microtask after the mutating task, so new rules are
+mirrored before the next paint.
 
 ---
 
