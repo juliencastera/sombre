@@ -1,0 +1,139 @@
+import { describe, expect, it } from 'vitest';
+import { apcaContrast } from '../../src/shared/color/apca.ts';
+import { oklchToRgb, perceivedLightness, rgbToOklch } from '../../src/shared/color/oklab.ts';
+import { formatColor, parseColor } from '../../src/shared/color/parse.ts';
+import { PAGE_BG_L, transformColor } from '../../src/engine/transform.ts';
+import { rewriteValue, roleVariable } from '../../src/engine/value.ts';
+
+const rgba = (value: string) => parseColor(value)!;
+const L = (value: string, role: Parameters<typeof transformColor>[1]) => perceivedLightness(transformColor(rgba(value), role));
+
+describe('parseColor', () => {
+  it.each([
+    ['#fff', { r: 255, g: 255, b: 255, a: 1 }],
+    ['#0b5fff', { r: 11, g: 95, b: 255, a: 1 }],
+    ['#00000080', { r: 0, g: 0, b: 0, a: 128 / 255 }],
+    ['rgb(10, 20, 30)', { r: 10, g: 20, b: 30, a: 1 }],
+    ['rgba(0,0,0,.05)', { r: 0, g: 0, b: 0, a: 0.05 }],
+    ['rgb(10 20 30 / 50%)', { r: 10, g: 20, b: 30, a: 0.5 }],
+    ['hsl(0 100% 50%)', { r: 255, g: 0, b: 0, a: 1 }],
+    ['hsla(120, 100%, 25%, 0.5)', { r: 0, g: 127.5, b: 0, a: 0.5 }],
+    ['RebeccaPurple', { r: 0x66, g: 0x33, b: 0x99, a: 1 }],
+    ['transparent', { r: 0, g: 0, b: 0, a: 0 }],
+  ])('%s', (input, expected) => {
+    expect(parseColor(input)).toEqual(expected);
+  });
+
+  it.each(['oklch(0.5 0.1 120)', 'currentcolor', 'Canvas', 'rgb(from red r g b)', 'rgb(var(--x))', '#ggg'])(
+    'leaves %s to the browser',
+    (input) => expect(parseColor(input)).toBeNull(),
+  );
+
+  it('formats opaque colors as hex and translucent ones as rgb()', () => {
+    expect(formatColor({ r: 255, g: 0, b: 16, a: 1 })).toBe('#ff0010');
+    expect(formatColor({ r: 1, g: 2, b: 3, a: 0.5 })).toBe('rgb(1 2 3 / 0.5)');
+  });
+});
+
+describe('oklch round trip', () => {
+  it.each(['#ffffff', '#000000', '#0b5fff', '#e60023', '#fff3cd'])('%s', (hex) => {
+    const back = formatColor({ ...oklchToRgb(rgbToOklch(rgba(hex))), a: 1 });
+    expect(back).toBe(hex);
+  });
+
+  it('maps out-of-gamut chroma back into sRGB at the requested lightness', () => {
+    const rgb = oklchToRgb({ l: 0.3, c: 0.4, h: 30 });
+    for (const channel of [rgb.r, rgb.g, rgb.b]) expect(channel).toBeGreaterThanOrEqual(0);
+    expect(perceivedLightness(rgb)).toBeCloseTo(0.3, 2);
+  });
+});
+
+describe('transformColor', () => {
+  it('turns a white background into the page background', () => {
+    expect(L('#ffffff', 'bg')).toBeCloseTo(PAGE_BG_L, 2);
+  });
+
+  it('keeps light backgrounds ordered (lighter source → darker result)', () => {
+    expect(L('#ffffff', 'bg')).toBeLessThan(L('#f0f0f0', 'bg'));
+    expect(L('#f0f0f0', 'bg')).toBeLessThan(L('#cccccc', 'bg'));
+  });
+
+  it('keeps dark backgrounds dark', () => {
+    expect(L('#222222', 'bg')).toBeLessThan(PAGE_BG_L);
+  });
+
+  it('inverts dark text and keeps light text light', () => {
+    expect(L('#000000', 'fg')).toBeGreaterThan(0.9);
+    expect(L('#ffffff', 'fg')).toBeCloseTo(1, 2);
+    expect(L('#999999', 'fg')).toBeGreaterThanOrEqual(0.63);
+  });
+
+  it('keeps hue for colored text', () => {
+    const before = rgbToOklch(rgba('#0645ad'));
+    const after = rgbToOklch(transformColor(rgba('#0645ad'), 'fg'));
+    expect(Math.abs(after.h - before.h)).toBeLessThan(6);
+  });
+
+  it('preserves alpha', () => {
+    expect(transformColor(rgba('rgba(0,0,0,.1)'), 'shadow').a).toBe(0.1);
+  });
+
+  it('keeps default text readable on the default background', () => {
+    const text = transformColor(rgba('#222222'), 'fg');
+    const bg = transformColor(rgba('#ffffff'), 'bg');
+    expect(Math.abs(apcaContrast(text, bg))).toBeGreaterThan(75);
+  });
+});
+
+describe('rewriteValue', () => {
+  const bg = (value: string, options = {}) => rewriteValue(value, 'bg', options);
+
+  it('returns null when there is nothing to rewrite', () => {
+    expect(bg('none')).toBeNull();
+    expect(bg('url(a.png) no-repeat')).toBeNull();
+    expect(bg('transparent')).toBeNull();
+    expect(bg('currentcolor')).toBeNull();
+  });
+
+  it('rewrites hex, functional and named colors', () => {
+    const white = formatColor(transformColor(rgba('#fff'), 'bg'));
+    expect(bg('#fff')).toBe(white);
+    expect(bg('rgb(255, 255, 255)')).toBe(white);
+    expect(bg('white')).toBe(white);
+  });
+
+  it('rewrites every stop of a gradient and leaves the rest intact', () => {
+    const out = bg('linear-gradient(to right, #fff 0%, rgba(0, 0, 0, 0.5) 100%)')!;
+    expect(out).toMatch(/^linear-gradient\(to right, #[0-9a-f]{6} 0%, rgb\(\d+ \d+ \d+ \/ 0\.5\) 100%\)$/);
+  });
+
+  it('rewrites variables to their role twin with the original as fallback', () => {
+    expect(bg('var(--surface)')).toBe(`var(${roleVariable('bg', '--surface')},var(--surface))`);
+    const withFallback = bg('var(--surface, #fff)')!;
+    expect(withFallback.startsWith(`var(${roleVariable('bg', '--surface')},var(--surface,`)).toBe(true);
+    expect(withFallback).not.toContain('#fff');
+  });
+
+  it('does not touch url() contents or quoted strings', () => {
+    expect(bg('url("white.png"), linear-gradient(white, black)')).toContain('url("white.png")');
+  });
+
+  it('absolutizes relative urls when a base is given', () => {
+    const out = bg('url(img/a.png), linear-gradient(white, black)', { baseUrl: 'https://cdn.example.com/css/site.css' })!;
+    expect(out).toContain('url("https://cdn.example.com/css/img/a.png")');
+  });
+
+  it('does not mistake units or identifiers for colors', () => {
+    expect(rewriteValue('1px solid', 'border')).toBeNull();
+    expect(rewriteValue('0 0 0 1px', 'shadow')).toBeNull();
+  });
+
+  it('leaves light-dark() alone: the site already provides its dark color', () => {
+    expect(bg('light-dark(#fff, #111)')).toBeNull();
+  });
+
+  it('uses the fallback resolver for syntaxes it does not parse', () => {
+    const out = bg('oklch(1 0 0)', { resolveColor: () => ({ r: 255, g: 255, b: 255, a: 1 }) });
+    expect(out).toBe(formatColor(transformColor(rgba('#fff'), 'bg')));
+  });
+});
