@@ -26,16 +26,27 @@ between navigations.
 
 ## 2. Rendering architecture (3 layers + native)
 
-1. **Instant base layer** — static CSS declared in `manifest.content_scripts[].css`,
-   injected before first paint: `color-scheme: dark`, generic dark background/text.
-   Guarantees no white frame even before any JS runs.
-2. **Progressive refinement** — the engine analyzes stylesheets off the critical path
-   and applies the precise theme as it goes.
+1. **Instant base layer** — static CSS (`public/base-dark.css`, `public/base-auto.css`)
+   injected by the browser before first paint: `color-scheme: dark`, dark canvas and
+   text, and a "nothing paints light" guard (every element forced dark) until the
+   engine marks the page ready (`data-sombre-ready`). Guarantees no white frame even
+   before any JS runs. Registered **dynamically** (`chrome.scripting.registerContentScripts`)
+   rather than in the manifest, so the browser only injects it where dark mode applies:
+   never-sites and known native-dark sites are excluded, and Auto mode uses a
+   `prefers-color-scheme` media query — no async settings lookup before the first frame.
+2. **Precise theme** — at DOMContentLoaded (max 1 s) once linked stylesheets are loaded
+   (max 2 s) and cross-origin ones fetched (max 2.5 s), the engine swaps the guard for the
+   generated theme in one frame; later stylesheets are mirrored as they appear.
 3. **Per-domain cache** — generated CSS stored and replayed on next visit (see §5).
 
 **Native dark mode first:** if the site ships its own dark theme
 (`prefers-color-scheme` media rules, `.dark` / `data-theme` conventions), activate it
 and do not run the engine. The popup states this and offers "Use Sombre's engine instead".
+M1 detects it by reading the page's own colors with Sombre disabled (synchronously, no
+frame painted): the canvas (root/body background, propagated) must be dark and ≥ 85 % of a
+3×3 viewport grid must sit on dark backgrounds — a dark hero over white sections is not a
+dark theme. Re-checked at `load` for sites that switch theme from script. Verdicts are
+stored per site and excluded from the base layer registration.
 
 ---
 
@@ -59,6 +70,11 @@ and do not run the engine. The popup states this and offers "Use Sombre's engine
   | High / Élevé | Lc 90 |
 
   Replaces Dark Reader's brightness/contrast/sepia/grayscale sliders.
+- **Roles:** a color is transformed according to its use — background, text, border,
+  shadow. Light backgrounds map into a narrow dark band (white → L 0.20), already-dark
+  backgrounds stay dark; dark and mid-grey text maps into a compressed light band
+  calibrated with APCA against the page background (#222 → Lc 81, #999 → Lc 56); light
+  text on colored surfaces stays light.
 - Implementation: in-house OKLCH + APCA (~200 LOC), no color library in the content script.
 - CSS parsing: native parser (`new CSSStyleSheet().replaceSync(text)` → walk `cssRules`).
 
@@ -66,14 +82,22 @@ and do not run the engine. The popup states this and offers "Use Sombre's engine
 
 ## 4. Toggle mechanism
 
-- All generated CSS is scoped under `:root[data-sombre="on"]` inside a dedicated `@layer`.
-- Injection via `adoptedStyleSheets` (invisible to the page, no DOM pollution,
-  same sheet object reused in every shadow root).
-- Toggle = flip **one attribute** on `<html>` → single style recalc, no re-analysis.
+- The engine **mirrors** every page rule that sets a color: same selector (hence same
+  specificity), same at-rule structure (`@media`, `@supports`, `@layer`, nesting,
+  imports), only color declarations kept and transformed, `!important` preserved.
+  Custom properties get one twin per role (`--sombre-bg--x`, `--sombre-fg--x`…) and
+  `var(--x)` in a color declaration becomes `var(--sombre-<role>--x, var(--x))`.
+- The mirror lives in one `adoptedStyleSheets` entry kept **last**, so it wins every
+  specificity tie against page sheets (invisible to the page's DOM, reusable in shadow roots).
+  Not an `@layer` and not scoped selectors: layered declarations lose to all unlayered
+  page CSS, and a scoping prefix would shift specificities and break selectors that target `:root`.
+- Toggle = flip `data-sombre` on `<html>` (base layer) **and** the sheet's `disabled`
+  flag in the same frame → single style recalc, no re-analysis.
 - Wrapped in `document.startViewTransition()` for a GPU crossfade (~150–200 ms);
   skipped when `prefers-reduced-motion: reduce`.
-- Keyboard shortcut via `chrome.commands` (default `Alt+Shift+D`). Shortcut and
-  toolbar click toggle **the current site** (create/remove a site exception), not the global default.
+- Keyboard shortcut via `chrome.commands` (default `Alt+Shift+D`, same as Dark Reader's:
+  disable it while both are installed). The shortcut toggles **the current site**
+  (create/remove a site exception), not the global default; the toolbar click opens the popup (§7).
 - Injection goes through a small `StyleInjector` interface so a Firefox port only
   needs an alternative implementation.
 
@@ -105,9 +129,10 @@ and do not run the engine. The popup states this and offers "Use Sombre's engine
 | CSS-in-JS via `insertRule` (styled-components, emotion) | MAIN-world script patching `CSSStyleSheet.prototype.insertRule` / `replace(Sync)` |
 | Open Shadow DOM | Patch `attachShadow`, attach the shared adopted sheet |
 | Same-origin iframes | `all_frames: true` |
+| Legacy color attributes (`bgcolor`, `<font color>`, `<body text>`) | Per-value `:where([bgcolor="…" i])` rules (zero specificity, like the presentational hints they replace) |
 
 **v1.x:** image handling (v1 leaves images untouched, optional mild dimming of large
-bright images), `linear-gradient` color transformation.
+bright images). Gradient colors are already transformed since M1.
 
 **Out of scope:** `<canvas>` apps (Docs, Figma), closed shadow roots, built-in PDF viewer.
 
