@@ -5,8 +5,12 @@ import type { Rgba } from '../shared/color/types.ts';
  * How a color is used decides how it is darkened: a white background must
  * become dark, while white text must stay light.
  */
-export type Role = 'bg' | 'fg' | 'border' | 'shadow';
+export type Role = 'bg' | 'fg' | 'border' | 'shadow' | 'invert';
 
+/**
+ * Roles a custom property can feed (each gets a twin). `invert` is reserved for
+ * SVG artwork attributes, where a fill can be a shape's background or its ink.
+ */
 export const ROLES: readonly Role[] = ['bg', 'fg', 'border', 'shadow'];
 
 /** OKLCH lightness of the page background a white page maps to. Keep in sync with public/base-*.css. */
@@ -30,11 +34,13 @@ function mapLightness(l: number, role: Role): number {
       return l >= 0.5 ? 0.28 + (1 - l) * 0.4 : 0.55 - l * 0.4;
     case 'shadow':
       return l < 0.5 ? l : l * 0.2;
+    case 'invert':
+      return l >= 0.5 ? mapLightness(l, 'bg') : mapLightness(l, 'fg');
   }
 }
 
 /** Saturated colors look louder on dark backgrounds; tone chroma down a little. */
-const CHROMA_SCALE: Record<Role, number> = { bg: 0.8, fg: 0.95, border: 0.8, shadow: 1 };
+const CHROMA_SCALE: Record<Role, number> = { bg: 0.8, fg: 0.95, border: 0.8, shadow: 1, invert: 0.9 };
 
 const cache = new Map<string, Rgba>();
 

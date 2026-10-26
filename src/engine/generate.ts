@@ -1,5 +1,5 @@
 import { ROLES, type Role } from './transform.ts';
-import { rewriteValue, roleVariable, type RewriteOptions } from './value.ts';
+import { channelTwins, rewriteValue, roleVariable, type RewriteOptions } from './value.ts';
 
 export interface GenerateOptions extends RewriteOptions {
   /** Generated CSS for an `@import`ed sheet the page cannot read (cross-origin), or null if not loaded yet. */
@@ -57,19 +57,24 @@ const VAR_SHORTHANDS: [string, Role][] = [
   ['column-rule', 'border'],
 ];
 
-function declarations(style: CSSStyleDeclaration, options: GenerateOptions): string {
+/**
+ * Transformed color declarations of a style block. `forceImportant` is used for
+ * inline styles, which only `!important` stylesheet rules can override.
+ */
+export function declarations(style: CSSStyleDeclaration, options: GenerateOptions, forceImportant = false): string {
   let out = '';
   let pendingShorthand = false;
   for (let i = 0; i < style.length; i++) {
     const property = style[i]!;
     const value = style.getPropertyValue(property);
-    const important = style.getPropertyPriority(property) ? '!important' : '';
+    const important = forceImportant || style.getPropertyPriority(property) ? '!important' : '';
 
     if (property.startsWith('--')) {
       for (const role of ROLES) {
         const rewritten = rewriteValue(value, role, options);
         if (rewritten !== null) out += `${roleVariable(role, property)}:${rewritten}${important};`;
       }
+      out += channelTwins(property, value, ROLES, important);
       continue;
     }
 
@@ -89,7 +94,7 @@ function declarations(style: CSSStyleDeclaration, options: GenerateOptions): str
       const value = style.getPropertyValue(shorthand);
       if (!value.includes('var(')) continue;
       const rewritten = rewriteValue(value, role, options);
-      const important = style.getPropertyPriority(shorthand) ? '!important' : '';
+      const important = forceImportant || style.getPropertyPriority(shorthand) ? '!important' : '';
       if (rewritten !== null) out += `${shorthand}:${rewritten}${important};`;
     }
   }
