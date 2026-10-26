@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Fixture — utility CSS (Tailwind v3, shadcn/ui variables)</title>
+    <style>
+      /* Tailwind v3 output: channels are literal, alpha is a variable. */
+      .bg-white { --tw-bg-opacity: 1; background-color: rgb(255 255 255 / var(--tw-bg-opacity)); }
+      .bg-gray-50 { --tw-bg-opacity: 1; background-color: rgb(249 250 251 / var(--tw-bg-opacity)); }
+      .text-gray-900 { --tw-text-opacity: 1; color: rgb(17 24 39 / var(--tw-text-opacity)); }
+      .text-gray-500 { --tw-text-opacity: 1; color: rgba(107, 114, 128, var(--tw-text-opacity)); }
+      .border-gray-200 { --tw-border-opacity: 1; border-color: rgb(229 231 235 / var(--tw-border-opacity)); }
+      .p-6 { padding: 24px; } .border { border-width: 1px; border-style: solid; } .rounded { border-radius: 8px; }
+
+      /* shadcn/ui: variables hold bare HSL channels. */
+      :root {
+        --background: 0 0% 100%;
+        --foreground: 222.2 84% 4.9%;
+        --card: 0 0% 100%;
+        --muted: 210 40% 96.1%;
+        --muted-foreground: 215.4 16.3% 46.9%;
+        --border: 214.3 31.8% 91.4%;
+      }
+      body { margin: 0; font: 15px/1.5 system-ui, sans-serif; background: hsl(var(--background)); color: hsl(var(--foreground)); }
+      .card { background: hsl(var(--card)); border: 1px solid hsl(var(--border)); border-radius: 12px; padding: 20px; margin: 16px 0; }
+      .muted { background: hsl(var(--muted)); color: hsl(var(--muted-foreground)); padding: 8px 12px; border-radius: 6px; }
+      .overlay { background: hsl(var(--foreground) / 0.06); padding: 8px; }
+    </style>
+  </head>
+  <body>
+    <main style="max-width: 880px; margin: 0 auto; padding: 24px">
+      <section class="bg-gray-50 p-6 rounded">
+        <div class="bg-white border border-gray-200 rounded p-6">
+          <h2 class="text-gray-900">Tailwind v3 panel</h2>
+          <p class="text-gray-500">Utility classes with variable opacity.</p>
+        </div>
+      </section>
+      <div class="card">
+        <h2>shadcn/ui card</h2>
+        <p class="muted">Muted block driven by HSL channel variables.</p>
+        <p class="overlay">Translucent overlay from a channel variable with alpha.</p>
+      </div>
+    </main>
+  </body>
+</html>
