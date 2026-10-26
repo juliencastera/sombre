@@ -22,7 +22,7 @@ async function syncRegistrations(): Promise<void> {
   const excluded = [...new Set([...siteKeys, ...native])].flatMap(sitePatterns);
 
   const scripts: Parameters<typeof browser.scripting.registerContentScripts>[0] = [];
-  const common = { runAt: 'document_start', allFrames: true, persistAcrossSessions: true } as const;
+  const common = { runAt: 'document_start', allFrames: true, matchOriginAsFallback: true, persistAcrossSessions: true } as const;
   if (settings.mode !== 'light') {
     scripts.push({
       ...common,

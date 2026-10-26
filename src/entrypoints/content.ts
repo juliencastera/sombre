@@ -34,6 +34,7 @@ export default defineContentScript({
   matches: ['<all_urls>'],
   runAt: 'document_start',
   allFrames: true,
+  matchOriginAsFallback: true,
 
   async main() {
     const root = document.documentElement;

@@ -5,6 +5,7 @@
  * Keep in sync with base-auto.css.
  */
 :root:not([data-sombre="off"]) {
+  --sombre-base: 1;
   color-scheme: dark !important;
 }
 

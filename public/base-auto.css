@@ -5,6 +5,7 @@
  */
 @media (prefers-color-scheme: dark) {
   :root:not([data-sombre="off"]) {
+    --sombre-base: 1;
     color-scheme: dark !important;
   }
 
