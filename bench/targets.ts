@@ -3,14 +3,18 @@ import path from 'node:path';
 import type { BrowserContext, Page } from '@playwright/test';
 import { PATHS } from './config.ts';
 
-/** Extension API as seen from Dark Reader's options page (evaluated there, not in Node). */
-declare const chrome: { runtime: { sendMessage(message: unknown): Promise<{ data?: { isEnabled?: boolean } }> } };
+/** Extension APIs used by functions evaluated inside extension pages and workers (not in Node). */
+declare const chrome: {
+  runtime: { sendMessage(message: unknown): Promise<{ data?: { isEnabled?: boolean } }> };
+  scripting: { getRegisteredContentScripts(): Promise<unknown[]> };
+  storage: { local: { get(key: string): Promise<Record<string, any>>; set(items: object): Promise<void> } };
+};
 
 export type TargetId = 'control' | 'darkreader' | 'sombre';
 
 export interface TargetSession {
-  /** Switch dark mode on/off. Resolves with the epoch ms at which the command was sent. */
-  toggle?: (enabled: boolean) => Promise<number>;
+  /** Switch dark mode on/off for the site at `url`. Resolves with the epoch ms at which the command was sent. */
+  toggle?: (enabled: boolean, url: string) => Promise<number>;
 }
 
 export interface Target {
@@ -84,8 +88,35 @@ const sombre: Target = {
   extensionPath: PATHS.sombre,
   unavailableReason: async () =>
     (await exists(path.join(PATHS.sombre, 'manifest.json'))) ? null : 'not built, run `npm run build`',
-  // No toggle until M1 ships the engine.
-  prepare: async () => ({}),
+  async prepare(context) {
+    const worker = context.serviceWorkers()[0] ?? (await context.waitForEvent('serviceworker', { timeout: 15_000 }));
+    // The base layer is registered on install; pages loaded before that would miss it.
+    await worker.evaluate(async () => {
+      for (let i = 0; i < 100; i++) {
+        if ((await chrome.scripting.getRegisteredContentScripts()).length) return;
+        await new Promise((resolve) => setTimeout(resolve, 50));
+      }
+      throw new Error('Sombre base layer never registered');
+    });
+    return {
+      // Same path as the shortcut: "off" adds a never-exception, "on" removes it (back to the dark default).
+      // Content scripts react to the storage change.
+      toggle: (enabled, url) =>
+        worker.evaluate(
+          async ({ enabled, hostname }) => {
+            const key = 'sombre:settings';
+            const settings = (await chrome.storage.local.get(key))[key] ?? { mode: 'auto', sites: {} };
+            const site = hostname.replace(/^www\./, '');
+            if (enabled) delete settings.sites[site];
+            else settings.sites[site] = 'never';
+            const sentAt = Date.now();
+            await chrome.storage.local.set({ [key]: settings });
+            return sentAt;
+          },
+          { enabled, hostname: new URL(url).hostname },
+        ),
+    };
+  },
 };
 
 export const TARGETS: Record<TargetId, Target> = { control, darkreader: darkReader, sombre };

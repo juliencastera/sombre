@@ -77,8 +77,8 @@ async function measureToggle(page: Page, session: TargetSession): Promise<Toggle
   const toggle = session.toggle;
   if (!toggle) return null;
   await page.evaluate(installStabilityWatcher);
-  const offMs = await timeToggle(page, () => toggle(false));
-  const onMs = await timeToggle(page, () => toggle(true));
+  const offMs = await timeToggle(page, () => toggle(false, page.url()));
+  const onMs = await timeToggle(page, () => toggle(true, page.url()));
   return { offMs, onMs };
 }
 
