@@ -3,7 +3,7 @@ import { apcaContrast } from '../../src/shared/color/apca.ts';
 import { oklchToRgb, perceivedLightness, rgbToOklch } from '../../src/shared/color/oklab.ts';
 import { formatColor, parseColor } from '../../src/shared/color/parse.ts';
 import { PAGE_BG_L, transformColor } from '../../src/engine/transform.ts';
-import { rewriteValue, roleVariable } from '../../src/engine/value.ts';
+import { channelTwins, channelVariable, rewriteValue, roleVariable } from '../../src/engine/value.ts';
 
 const rgba = (value: string) => parseColor(value)!;
 const L = (value: string, role: Parameters<typeof transformColor>[1]) => perceivedLightness(transformColor(rgba(value), role));
@@ -126,6 +126,27 @@ describe('rewriteValue', () => {
   it('does not mistake units or identifiers for colors', () => {
     expect(rewriteValue('1px solid', 'border')).toBeNull();
     expect(rewriteValue('0 0 0 1px', 'shadow')).toBeNull();
+  });
+
+  it('transforms channels and keeps a variable alpha (Tailwind v3)', () => {
+    const white = transformColor(rgba('#fff'), 'bg');
+    const expected = `rgb(${Math.round(white.r)} ${Math.round(white.g)} ${Math.round(white.b)} / var(--tw-bg-opacity))`;
+    expect(bg('rgb(255 255 255 / var(--tw-bg-opacity))')).toBe(expected);
+    expect(bg('rgba(255, 255, 255, var(--tw-bg-opacity))')).toBe(expected);
+  });
+
+  it('routes channel variables to channel twins (shadcn/ui)', () => {
+    expect(bg('hsl(var(--background))')).toBe(`hsl(var(${channelVariable('bg', 'hsl', '--background')},var(--background)))`);
+    expect(bg('rgb(var(--primary) / 0.5)')).toBe(`rgb(var(${channelVariable('bg', 'rgb', '--primary')},var(--primary)) / 0.5)`);
+  });
+
+  it('generates channel twins in the same format as the source', () => {
+    const twins = channelTwins('--background', '0 0% 100%', ['bg'], '');
+    const white = transformColor(rgba('#fff'), 'bg');
+    const l = Math.round((white.r / 255) * 1000) / 10;
+    expect(twins).toBe(`${channelVariable('bg', 'hsl', '--background')}:0 0% ${l}%;`);
+    expect(channelTwins('--primary', '59 130 246', ['fg'], '')).toMatch(/^--sombre-fg-rgb--primary:\d+ \d+ \d+;$/);
+    expect(channelTwins('--gap', '4px', ['bg'], '')).toBe('');
   });
 
   it('leaves light-dark() alone: the site already provides its dark color', () => {
