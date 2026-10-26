@@ -1,0 +1,18 @@
+node_modules/
+.output/
+.wxt/
+dist/
+coverage/
+*.log
+
+# Benchmark artifacts
+bench/.cache/
+bench/results/
+bench/profiles/
+bench/vendor/
+
+# Secrets
+*.key
+*.pem
+.env
+.env.*
