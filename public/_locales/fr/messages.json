@@ -1,0 +1,68 @@
+{
+  "extName": { "message": "Sombre" },
+  "extDescription": { "message": "Le mode sombre sur tous les sites : sans flash blanc, contraste du texte garanti, bascule instantanée." },
+  "commandToggleSite": { "message": "Basculer le mode sombre sur le site actuel" },
+
+  "notAvailable": { "message": "Indisponible sur cette page (pages du navigateur, boutiques d'extensions)." },
+  "reasonSiteDark": { "message": "Sombre — toujours sur ce site" },
+  "reasonSiteNever": { "message": "Clair — jamais sur ce site" },
+  "reasonModeDark": { "message": "Sombre — réglage global" },
+  "reasonModeLight": { "message": "Clair — réglage global" },
+  "reasonAutoDark": { "message": "Sombre — réglage global (Auto, système sombre)" },
+  "reasonAutoLight": { "message": "Clair — réglage global (Auto, système clair)" },
+  "nativeStatus": { "message": "Sombre — le thème sombre du site" },
+  "nativeHint": { "message": "Sombre le conserve et n'assombrit que ce qui reste clair." },
+  "useEngine": { "message": "Utiliser le moteur de Sombre à la place" },
+  "engineForced": { "message": "Le moteur de Sombre remplace le thème sombre du site." },
+
+  "thisSite": { "message": "Ce site" },
+  "stateDefault": { "message": "Par défaut" },
+  "stateDark": { "message": "Sombre" },
+  "stateNever": { "message": "Jamais" },
+
+  "contrast": { "message": "Contraste" },
+  "contrastSoft": { "message": "Doux" },
+  "contrastStandard": { "message": "Standard" },
+  "contrastHigh": { "message": "Élevé" },
+
+  "defaultMode": { "message": "Par défaut" },
+  "modeAuto": { "message": "Auto" },
+  "modeDark": { "message": "Sombre" },
+  "modeLight": { "message": "Clair" },
+  "options": { "message": "Options" },
+  "shortcut": {
+    "message": "Raccourci : $KEY$",
+    "placeholders": { "key": { "content": "$1", "example": "Alt+Maj+D" } }
+  },
+
+  "optionsTitle": { "message": "Réglages de Sombre" },
+  "sectionGeneral": { "message": "Général" },
+  "defaultModeLabel": { "message": "Par défaut sur tous les sites" },
+  "defaultModeHelp": { "message": "Auto suit le réglage clair ou sombre de votre système." },
+  "contrastHelp": { "message": "Lisibilité minimale du texte : Doux (APCA Lc 60), Standard (75), Élevé (90). Le grand texte a 15 de moins." },
+  "shortcutLabel": { "message": "Raccourci clavier" },
+  "shortcutHelp": { "message": "Bascule le mode sombre sur le site actuel." },
+  "shortcutNone": { "message": "Non défini" },
+  "shortcutChange": { "message": "Modifier" },
+  "sectionSites": { "message": "Exceptions par site" },
+  "sitesEmpty": { "message": "Aucune exception pour l'instant. Utilisez le popup sur un site pour en ajouter une." },
+  "remove": { "message": "Retirer" },
+  "sectionNative": { "message": "Sites avec leur propre thème sombre" },
+  "nativeHelp": { "message": "Sombre conserve leur thème et n'assombrit que ce qui reste clair. Oubliez un site pour le détecter à nouveau à la prochaine visite." },
+  "nativeEmpty": { "message": "Aucun détecté pour l'instant." },
+  "nativeSwitched": { "message": "activé par Sombre" },
+  "forget": { "message": "Oublier" },
+  "sectionCache": { "message": "Cache" },
+  "cacheHelp": { "message": "Feuilles de style déjà converties : les sites connus ont leur thème complet sans attendre le réseau." },
+  "cacheSize": {
+    "message": "$SIZE$ pour $COUNT$ sites",
+    "placeholders": { "size": { "content": "$1" }, "count": { "content": "$2" } }
+  },
+  "clearCache": { "message": "Vider" },
+  "sectionAbout": { "message": "À propos" },
+  "privacy": { "message": "Aucune donnée de navigation ne quitte votre navigateur. Sombre ne récupère que les feuilles de style des pages que vous visitez, pour les convertir." },
+  "version": {
+    "message": "Version $VERSION$",
+    "placeholders": { "version": { "content": "$1" } }
+  }
+}

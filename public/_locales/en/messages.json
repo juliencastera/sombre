@@ -1,0 +1,68 @@
+{
+  "extName": { "message": "Sombre" },
+  "extDescription": { "message": "Dark mode for every website: no white flash, guaranteed text contrast, instant toggle." },
+  "commandToggleSite": { "message": "Toggle dark mode on the current site" },
+
+  "notAvailable": { "message": "Not available on this page (browser pages, extension stores)." },
+  "reasonSiteDark": { "message": "Dark — always on this site" },
+  "reasonSiteNever": { "message": "Light — never on this site" },
+  "reasonModeDark": { "message": "Dark — global default" },
+  "reasonModeLight": { "message": "Light — global default" },
+  "reasonAutoDark": { "message": "Dark — global default (Auto, system is dark)" },
+  "reasonAutoLight": { "message": "Light — global default (Auto, system is light)" },
+  "nativeStatus": { "message": "Dark — the site's own dark theme" },
+  "nativeHint": { "message": "Sombre keeps it and only darkens what stays light." },
+  "useEngine": { "message": "Use Sombre's engine instead" },
+  "engineForced": { "message": "Sombre's engine is used instead of the site's own dark theme." },
+
+  "thisSite": { "message": "This site" },
+  "stateDefault": { "message": "Default" },
+  "stateDark": { "message": "Dark" },
+  "stateNever": { "message": "Never" },
+
+  "contrast": { "message": "Contrast" },
+  "contrastSoft": { "message": "Soft" },
+  "contrastStandard": { "message": "Standard" },
+  "contrastHigh": { "message": "High" },
+
+  "defaultMode": { "message": "Default" },
+  "modeAuto": { "message": "Auto" },
+  "modeDark": { "message": "Dark" },
+  "modeLight": { "message": "Light" },
+  "options": { "message": "Options" },
+  "shortcut": {
+    "message": "Shortcut: $KEY$",
+    "placeholders": { "key": { "content": "$1", "example": "Alt+Shift+D" } }
+  },
+
+  "optionsTitle": { "message": "Sombre settings" },
+  "sectionGeneral": { "message": "General" },
+  "defaultModeLabel": { "message": "Default for all sites" },
+  "defaultModeHelp": { "message": "Auto follows your system's light or dark setting." },
+  "contrastHelp": { "message": "Minimum readability of text: Soft (APCA Lc 60), Standard (75), High (90). Large text gets 15 less." },
+  "shortcutLabel": { "message": "Keyboard shortcut" },
+  "shortcutHelp": { "message": "Toggles dark mode on the current site." },
+  "shortcutNone": { "message": "Not set" },
+  "shortcutChange": { "message": "Change" },
+  "sectionSites": { "message": "Site exceptions" },
+  "sitesEmpty": { "message": "No exceptions yet. Use the popup on a site to add one." },
+  "remove": { "message": "Remove" },
+  "sectionNative": { "message": "Sites with their own dark theme" },
+  "nativeHelp": { "message": "Sombre keeps their theme and only darkens what stays light. Forget a site to detect it again on its next visit." },
+  "nativeEmpty": { "message": "None detected yet." },
+  "nativeSwitched": { "message": "switched on by Sombre" },
+  "forget": { "message": "Forget" },
+  "sectionCache": { "message": "Cache" },
+  "cacheHelp": { "message": "Converted stylesheets, so known sites get their full theme without waiting for the network." },
+  "cacheSize": {
+    "message": "$SIZE$ for $COUNT$ sites",
+    "placeholders": { "size": { "content": "$1" }, "count": { "content": "$2" } }
+  },
+  "clearCache": { "message": "Clear" },
+  "sectionAbout": { "message": "About" },
+  "privacy": { "message": "No browsing data leaves your browser. Sombre only fetches the stylesheets of the pages you visit, to convert them." },
+  "version": {
+    "message": "Version $VERSION$",
+    "placeholders": { "version": { "content": "$1" } }
+  }
+}

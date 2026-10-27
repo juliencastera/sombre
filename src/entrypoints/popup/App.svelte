@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { t } from '../../shared/i18n.ts';
   import type { GetStateRequest, PageState } from '../../shared/messages.ts';
   import {
     DEFAULT_SETTINGS,
@@ -14,21 +15,25 @@
     type Settings,
     type SiteState,
   } from '../../shared/settings.ts';
+  import Segmented from '../../ui/Segmented.svelte';
 
   const REASONS: Record<Reason, string> = {
-    'site-dark': 'Dark — always on this site',
-    'site-never': 'Light — never on this site',
-    'mode-dark': 'Dark — global default',
-    'mode-light': 'Light — global default',
-    'auto-dark': 'Dark — global default (Auto, OS is dark)',
-    'auto-light': 'Light — global default (Auto, OS is light)',
+    'site-dark': 'reasonSiteDark',
+    'site-never': 'reasonSiteNever',
+    'mode-dark': 'reasonModeDark',
+    'mode-light': 'reasonModeLight',
+    'auto-dark': 'reasonAutoDark',
+    'auto-light': 'reasonAutoLight',
   };
 
   const osDark = matchMedia('(prefers-color-scheme: dark)').matches;
+  /** Test hook: inspect a given tab instead of the active one (the popup opened as a tab is itself active). */
+  const tabParam = new URLSearchParams(location.search).get('tab');
 
   let settings = $state<Settings>(DEFAULT_SETTINGS);
   let page = $state<PageState | null>(null);
   let loaded = $state(false);
+  let shortcut = $state('');
 
   const effective = $derived(page ? resolveEffective(settings, page.hostname, osDark) : null);
   const siteState = $derived.by<SiteState | null>(() => {
@@ -36,14 +41,18 @@
     const key = findSiteKey(Object.keys(settings.sites), page.hostname);
     return key ? settings.sites[key]! : null;
   });
+  /** The site's own dark theme is in use (Sombre runs in preserve mode). */
+  const nativeInUse = $derived(Boolean(page?.native && effective?.on && effective.reason !== 'site-dark'));
 
   onMount(async () => {
     settings = normalizeSettings((await browser.storage.local.get(SETTINGS_KEY))[SETTINGS_KEY]);
-    const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
-    if (tab?.id !== undefined) {
+    const tabId = tabParam ? Number(tabParam) : (await browser.tabs.query({ active: true, currentWindow: true }))[0]?.id;
+    if (tabId !== undefined) {
       const request: GetStateRequest = { type: 'sombre:get-state' };
-      page = await browser.tabs.sendMessage(tab.id, request, { frameId: 0 }).catch(() => null);
+      page = await browser.tabs.sendMessage(tabId, request, { frameId: 0 }).catch(() => null);
     }
+    const command = (await browser.commands.getAll()).find((c) => c.name === 'toggle-site');
+    shortcut = command?.shortcut ?? '';
     loaded = true;
   });
 
@@ -52,155 +61,156 @@
     await browser.storage.local.set({ [SETTINGS_KEY]: $state.snapshot(next) });
   }
 
-  function setSite(state: SiteState | null) {
+  function setSite(state: SiteState | 'default') {
     if (!page) return;
     const key = siteKey(page.hostname);
     const sites = { ...settings.sites };
-    if (state) sites[key] = state;
-    else delete sites[key];
+    if (state === 'default') delete sites[key];
+    else sites[key] = state;
     void save({ ...settings, sites });
-  }
-
-  function setContrast(contrast: ContrastLevel) {
-    void save({ ...settings, contrast });
-  }
-
-  function setMode(mode: Mode) {
-    void save({ ...settings, mode });
   }
 </script>
 
 <main>
-  {#if !loaded}
-    <p class="muted">…</p>
-  {:else if !page || !effective}
-    <h1>Sombre</h1>
-    <p class="muted">Not available on this page.</p>
-  {:else}
+  {#if loaded && page && effective}
     <header>
-      <h1>{page.hostname}</h1>
-      <p class="status" class:on={effective.on && !page.native}>
-        {page.native && effective.on ? '✓ Native dark theme used' : REASONS[effective.reason]}
+      <h1 title={page.hostname}>{page.hostname}</h1>
+      <p class="status" data-testid="status">
+        <span class="dot" class:on={effective.on} aria-hidden="true"></span>
+        {nativeInUse ? t('nativeStatus') : t(REASONS[effective.reason])}
       </p>
+      {#if nativeInUse}
+        <p class="hint">
+          {t('nativeHint')}
+          <button type="button" class="link-button" onclick={() => setSite('dark')}>{t('useEngine')}</button>
+        </p>
+      {:else if page.native && siteState === 'dark'}
+        <p class="hint">{t('engineForced')}</p>
+      {/if}
     </header>
 
-    <div class="segmented" role="radiogroup" aria-label="This site">
-      <button role="radio" aria-checked={siteState === null} onclick={() => setSite(null)}>Default</button>
-      <button role="radio" aria-checked={siteState === 'dark'} onclick={() => setSite('dark')}>Dark</button>
-      <button role="radio" aria-checked={siteState === 'never'} onclick={() => setSite('never')}>Never</button>
-    </div>
+    <section>
+      <h2>{t('thisSite')}</h2>
+      <Segmented
+        label={t('thisSite')}
+        value={siteState ?? 'default'}
+        options={[
+          { value: 'default', label: t('stateDefault') },
+          { value: 'dark', label: t('stateDark') },
+          { value: 'never', label: t('stateNever') },
+        ]}
+        onchange={setSite}
+      />
+    </section>
+  {:else if loaded}
+    <header>
+      <h1>{t('extName')}</h1>
+      <p class="hint">{t('notAvailable')}</p>
+    </header>
   {/if}
 
   {#if loaded}
-    <section class="field">
-      <span class="label" id="contrast-label">Contrast</span>
-      <div class="segmented" role="radiogroup" aria-labelledby="contrast-label">
-        {#each [['soft', 'Soft'], ['standard', 'Standard'], ['high', 'High']] as const as [level, label] (level)}
-          <button role="radio" aria-checked={settings.contrast === level} onclick={() => setContrast(level)}>{label}</button>
-        {/each}
-      </div>
+    <section>
+      <h2>{t('contrast')}</h2>
+      <Segmented
+        label={t('contrast')}
+        value={settings.contrast}
+        options={[
+          { value: 'soft', label: t('contrastSoft') },
+          { value: 'standard', label: t('contrastStandard') },
+          { value: 'high', label: t('contrastHigh') },
+        ] satisfies { value: ContrastLevel; label: string }[]}
+        onchange={(contrast) => void save({ ...settings, contrast })}
+      />
     </section>
 
     <footer>
       <label>
-        Default
-        <select value={settings.mode} onchange={(event) => setMode(event.currentTarget.value as Mode)}>
-          <option value="auto">Auto</option>
-          <option value="dark">Dark</option>
-          <option value="light">Light</option>
+        {t('defaultMode')}
+        <select
+          value={settings.mode}
+          onchange={(event) => void save({ ...settings, mode: event.currentTarget.value as Mode })}
+        >
+          <option value="auto">{t('modeAuto')}</option>
+          <option value="dark">{t('modeDark')}</option>
+          <option value="light">{t('modeLight')}</option>
         </select>
       </label>
+      <button type="button" class="link-button" onclick={() => browser.runtime.openOptionsPage()}>{t('options')}</button>
     </footer>
+    {#if shortcut}
+      <p class="shortcut">{t('shortcut', shortcut)}</p>
+    {/if}
   {/if}
 </main>
 
 <style>
-  :global(:root) {
-    color-scheme: dark;
-  }
-
-  :global(body) {
-    margin: 0;
-    background: #16171a;
-    color: #e6e6e6;
-    font: 14px/1.4 system-ui, sans-serif;
-  }
-
   main {
     width: 320px;
     padding: 16px;
-    box-sizing: border-box;
     display: grid;
-    gap: 14px;
+    gap: 16px;
   }
 
   h1 {
     margin: 0;
     font-size: 15px;
-    overflow-wrap: anywhere;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  h2 {
+    margin: 0 0 6px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-3);
   }
 
   p {
     margin: 0;
   }
 
-  .muted,
   .status {
-    color: #a0a0a8;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-top: 4px;
+    color: var(--text-2);
   }
 
-  .status {
+  .dot {
+    flex: none;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--text-3);
+  }
+
+  .dot.on {
+    background: var(--on);
+  }
+
+  .hint {
+    margin-top: 6px;
+    font-size: 13px;
+    color: var(--text-3);
+  }
+
+  .hint .link-button {
+    display: block;
     margin-top: 2px;
-  }
-
-  .status.on {
-    color: #d7d7dc;
-  }
-
-  .segmented {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    padding: 3px;
-    border-radius: 9px;
-    background: #24252a;
-  }
-
-  .segmented button {
-    padding: 6px 0;
-    border: 0;
-    border-radius: 7px;
-    background: transparent;
-    color: #b8b8c0;
-    font: inherit;
-    cursor: pointer;
-  }
-
-  .segmented button[aria-checked='true'] {
-    background: #3a3b42;
-    color: #f2f2f5;
-  }
-
-  .segmented button:focus-visible,
-  select:focus-visible {
-    outline: 2px solid #7aa2ff;
-    outline-offset: 1px;
-  }
-
-  .field {
-    display: grid;
-    gap: 6px;
-  }
-
-  .label {
-    color: #a0a0a8;
+    font-size: 13px;
   }
 
   footer {
     display: flex;
     justify-content: space-between;
+    align-items: center;
     padding-top: 12px;
-    border-top: 1px solid #2a2b30;
-    color: #a0a0a8;
+    border-top: 1px solid var(--border);
+    color: var(--text-2);
   }
 
   label {
@@ -209,12 +219,9 @@
     align-items: center;
   }
 
-  select {
-    background: #24252a;
-    color: #e6e6e6;
-    border: 1px solid #3a3b42;
-    border-radius: 6px;
-    padding: 3px 6px;
-    font: inherit;
+  .shortcut {
+    margin-top: -8px;
+    font-size: 12px;
+    color: var(--text-3);
   }
 </style>
