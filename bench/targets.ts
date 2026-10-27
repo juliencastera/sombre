@@ -7,6 +7,7 @@ import { PATHS } from './config.ts';
 declare const chrome: {
   runtime: { sendMessage(message: unknown): Promise<{ data?: { isEnabled?: boolean } }> };
   scripting: { getRegisteredContentScripts(): Promise<unknown[]> };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- stored values are read with ad-hoc shapes
   storage: { local: { get(key: string): Promise<Record<string, any>>; set(items: object): Promise<void> } };
 };
 
@@ -43,7 +44,12 @@ async function extensionId(context: BrowserContext): Promise<string> {
 }
 
 async function closePagesExcept(context: BrowserContext, keep: Page[]): Promise<void> {
-  await Promise.all(context.pages().filter((page) => !keep.includes(page)).map((page) => page.close()));
+  await Promise.all(
+    context
+      .pages()
+      .filter((page) => !keep.includes(page))
+      .map((page) => page.close()),
+  );
 }
 
 const control: Target = {

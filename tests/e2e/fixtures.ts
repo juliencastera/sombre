@@ -25,6 +25,7 @@ export const sombreState = (page: Page) => page.evaluate(() => document.document
 
 export const test = base.extend<Fixtures, { servers: void }>({
   servers: [
+    // eslint-disable-next-line no-empty-pattern -- Playwright fixtures must destructure their dependencies
     async ({}, use) => {
       const stop = await startFixtureServers();
       await use();
@@ -56,7 +57,9 @@ export const test = base.extend<Fixtures, { servers: void }>({
   openPopup: async ({ context, worker, extensionId }, use) => {
     await use(async (page) => {
       await page.bringToFront();
-      const tabId = await worker.evaluate(async () => (await chrome.tabs.query({ active: true, lastFocusedWindow: true }))[0]?.id);
+      const tabId = await worker.evaluate(
+        async () => (await chrome.tabs.query({ active: true, lastFocusedWindow: true }))[0]?.id,
+      );
       const popup = await context.newPage();
       await popup.goto(`chrome-extension://${extensionId}/popup.html?tab=${tabId}`);
       return popup;

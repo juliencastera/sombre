@@ -1,0 +1,6 @@
+# Prose and data keep their hand formatting; the signed fix list is generated.
+*.md
+fixes/
+public/
+bench/fixtures/
+package-lock.json

@@ -16,7 +16,7 @@ BENCH_FLAGS = $(if $(SITES),--sites=$(SITES)) $(if $(TARGETS),--targets=$(TARGET
 	$(if $(SCHEME),--scheme=$(SCHEME)) $(if $(HAR),--har=$(HAR)) $(if $(HEADED),--headed) $(ARGS)
 
 .DEFAULT_GOAL := help
-.PHONY: help install dev build zip icons check test test-watch e2e verify \
+.PHONY: help install dev build zip icons check lint format test test-watch e2e verify \
 	bench-setup bench-record bench fixes-keygen fixes-sign clean
 
 help: ## List the targets
@@ -44,6 +44,13 @@ icons: ## Regenerate public/icon/*.png
 check: ## Type-check (svelte-check + TypeScript)
 	npm run check
 
+lint: ## ESLint, and check the Prettier formatting
+	npm run lint
+	npm run format:check
+
+format: ## Format the code with Prettier
+	npm run format
+
 test: ## Unit tests (ARGS=tests/unit/color.test.ts to filter)
 	npm run test -- $(ARGS)
 
@@ -53,7 +60,7 @@ test-watch: ## Unit tests in watch mode
 e2e: ## Build, then end-to-end tests (ARGS=tests/e2e/fixes.spec.ts to filter)
 	npm run test:e2e -- $(ARGS)
 
-verify: check test e2e ## Everything before a commit: check, unit and E2E tests
+verify: lint check test e2e ## Everything before a commit, as CI runs it: lint, check, unit and E2E tests
 
 ##@ Benchmark
 

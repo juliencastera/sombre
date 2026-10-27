@@ -22,12 +22,12 @@ export default defineContentScript({
     };
 
     /** Call `after` once the original method returned; keeps the original's name and arity. */
-    const hook = (proto: object, name: string, after: (self: any, result: unknown) => void) => {
+    const hook = <T extends object>(proto: T, name: string, after: (self: T, result: unknown) => void) => {
       const descriptor = Object.getOwnPropertyDescriptor(proto, name);
       if (typeof descriptor?.value !== 'function') return;
       const original = descriptor.value as (...args: unknown[]) => unknown;
       const wrapped = {
-        [name](this: unknown, ...args: unknown[]) {
+        [name](this: T, ...args: unknown[]) {
           const result = original.apply(this, args);
           try {
             after(this, result);
@@ -45,7 +45,10 @@ export default defineContentScript({
       hook(CSSStyleSheet.prototype, name, (sheet) => sheetChanged(sheet));
     }
     hook(CSSStyleSheet.prototype, 'replace', (sheet, result) => {
-      (result as Promise<unknown>).then(() => sheetChanged(sheet), () => {});
+      (result as Promise<unknown>).then(
+        () => sheetChanged(sheet),
+        () => {},
+      );
     });
     for (const name of ['insertRule', 'deleteRule']) {
       hook(CSSGroupingRule.prototype, name, (rule) => sheetChanged(rule.parentStyleSheet));

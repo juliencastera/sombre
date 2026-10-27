@@ -14,6 +14,9 @@
     "zip": "wxt zip",
     "postinstall": "wxt prepare",
     "check": "svelte-check --tsconfig ./tsconfig.json --fail-on-warnings",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "test": "vitest run",
     "test:watch": "vitest",
     "bench:setup": "node bench/scripts/setup.ts",
@@ -24,15 +27,23 @@
     "fixes:sign": "node scripts/sign-fixes.ts"
   },
   "devDependencies": {
+    "@eslint/js": "10.0.1",
     "@playwright/test": "1.64.1",
     "@types/node": "^24.0.0",
     "@types/pngjs": "6.0.5",
     "@wxt-dev/module-svelte": "2.0.5",
+    "eslint": "10.13.0",
+    "eslint-config-prettier": "10.1.8",
+    "eslint-plugin-svelte": "3.23.1",
     "fflate": "0.8.3",
+    "globals": "17.13.0",
     "pngjs": "7.0.0",
+    "prettier": "3.9.10",
+    "prettier-plugin-svelte": "4.1.1",
     "svelte": "5.57.3",
     "svelte-check": "4.7.7",
     "typescript": "6.0.3",
+    "typescript-eslint": "8.72.1",
     "vitest": "5.0.5",
     "wxt": "0.21.5"
   }
