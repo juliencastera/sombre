@@ -198,7 +198,16 @@ mirrored before the next paint.
 └──────────────────────────────────┘
 ```
 
+As built in M5 (320 px): when the site's own dark theme is in use, the status reads
+"Dark — the site's own dark theme" with a "Use Sombre's engine instead" link (sets the
+site to Dark). The keyboard shortcut is shown under the footer. Fix and Report arrive in M6.
+The popup accepts `?tab=<id>` so E2E tests can point it at a page (opened as a tab, it
+would otherwise inspect itself).
+
 ### Options page
+Implemented in M5 with: global default, contrast level, shortcut (shown, with a link to
+`chrome://extensions/shortcuts`), site exceptions (change or remove), sites with their own
+dark theme (forget to re-detect), cache size and clear, privacy statement. Spec'd:
 Global default, contrast level, shortcut link (`chrome://extensions/shortcuts`),
 site exceptions list, personal fixes (view / delete / export / import),
 remote fix list toggle.

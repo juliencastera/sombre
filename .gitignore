@@ -16,3 +16,7 @@ bench/vendor/
 *.pem
 .env
 .env.*
+
+# Playwright
+test-results/
+playwright-report/
