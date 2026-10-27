@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_SETTINGS,
   findSiteKey,
+  normalizeNative,
   normalizeSettings,
   resolveEffective,
   siteKey,
@@ -64,7 +65,18 @@ describe('normalizeSettings', () => {
     expect(normalizeSettings({ mode: 'nope', sites: { 'a.com': 'dark', 'b.com': 'x' } })).toEqual({
       mode: 'auto',
       sites: { 'a.com': 'dark' },
+      contrast: 'standard',
     });
     expect(normalizeSettings(undefined)).toEqual(DEFAULT_SETTINGS);
+    expect(normalizeSettings({ contrast: 'high' }).contrast).toBe('high');
+    expect(normalizeSettings({ contrast: 'max' }).contrast).toBe('standard');
+  });
+
+  it('reads native verdicts, including the M1 timestamp format', () => {
+    const marker = { target: 'html', kind: 'attr', name: 'dark', value: '' } as const;
+    expect(normalizeNative({ 'a.com': 5, 'b.com': { at: 6, marker }, 'c.com': 'x' })).toEqual({
+      'a.com': { at: 5 },
+      'b.com': { at: 6, marker },
+    });
   });
 });

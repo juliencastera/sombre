@@ -4,17 +4,39 @@ export type Mode = 'auto' | 'dark' | 'light';
 /** Per-site exception. Absent = follow the global default. */
 export type SiteState = 'dark' | 'never';
 
+/** Global contrast floor (spec §3), replacing brightness/contrast/sepia sliders. */
+export type ContrastLevel = 'soft' | 'standard' | 'high';
+
+/** Minimum APCA |Lc| for body-size text at each level; large text gets 15 less. */
+export const CONTRAST_TARGETS: Record<ContrastLevel, number> = { soft: 60, standard: 75, high: 90 };
+
 export interface Settings {
   mode: Mode;
   /** Keyed by site key (hostname without `www.`); applies to subdomains too. */
   sites: Record<string, SiteState>;
+  contrast: ContrastLevel;
 }
 
 export const SETTINGS_KEY = 'sombre:settings';
-/** Site keys detected as shipping their own dark theme, with detection time. */
+/** Site keys detected as shipping their own dark theme. */
 export const NATIVE_KEY = 'sombre:native';
 
-export const DEFAULT_SETTINGS: Settings = { mode: 'auto', sites: {} };
+/** A class or attribute that switches a site's own dark theme on (`html.dark`, `html[dark]`…). */
+export interface NativeMarker {
+  target: 'html' | 'body';
+  kind: 'class' | 'attr';
+  name: string;
+  value: string;
+}
+
+export interface NativeVerdict {
+  /** Detection time (epoch ms). */
+  at: number;
+  /** Present when Sombre switched the theme on itself; re-applied at document start. */
+  marker?: NativeMarker;
+}
+
+export const DEFAULT_SETTINGS: Settings = { mode: 'auto', sites: {}, contrast: 'standard' };
 
 export type Reason = 'site-dark' | 'site-never' | 'mode-dark' | 'mode-light' | 'auto-dark' | 'auto-light';
 
@@ -80,5 +102,18 @@ export function normalizeSettings(value: unknown): Settings {
   for (const [key, state] of Object.entries(raw.sites ?? {})) {
     if (state === 'dark' || state === 'never') sites[key] = state;
   }
-  return { mode, sites };
+  const contrast = raw.contrast && raw.contrast in CONTRAST_TARGETS ? raw.contrast : DEFAULT_SETTINGS.contrast;
+  return { mode, sites, contrast };
+}
+
+export function normalizeNative(value: unknown): Record<string, NativeVerdict> {
+  const out: Record<string, NativeVerdict> = {};
+  for (const [key, verdict] of Object.entries((value ?? {}) as Record<string, unknown>)) {
+    // M1 stored a bare timestamp.
+    if (typeof verdict === 'number') out[key] = { at: verdict };
+    else if (verdict && typeof verdict === 'object' && typeof (verdict as NativeVerdict).at === 'number') {
+      out[key] = verdict as NativeVerdict;
+    }
+  }
+  return out;
 }
