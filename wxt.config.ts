@@ -8,6 +8,9 @@ export default defineConfig({
     description: '__MSG_extDescription__',
     default_locale: 'en',
     action: { default_title: '__MSG_extName__' },
+    homepage_url: 'https://github.com/juliencastera/sombre',
+    // Ed25519 in WebCrypto (verifying the shared fix list) ships in Chrome 137.
+    minimum_chrome_version: '137',
     permissions: ['storage', 'scripting', 'unlimitedStorage', 'alarms'],
     // Every site may need the base layer, and cross-origin stylesheets must be fetched by the background.
     host_permissions: ['<all_urls>'],
