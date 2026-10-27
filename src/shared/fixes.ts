@@ -47,7 +47,7 @@ const SITE_KEY = /^[a-z0-9.-]+$/;
  * Characters and functions a selector never needs: block delimiters, at-rules,
  * escapes that could hide them, comments, and anything that loads a resource.
  */
-const FORBIDDEN_SELECTOR = /[{};@\\<>]|\/\*|url\(|image-set|src\(|expression/i;
+const FORBIDDEN_SELECTOR = /[{};@\\<]|\/\*|url\(|image-set|src\(|expression/i;
 
 export function validateFix(value: unknown): Fix | null {
   if (!value || typeof value !== 'object') return null;

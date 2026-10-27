@@ -188,5 +188,65 @@
   },
   "cancel": {
     "message": "Cancel"
+  },
+  "fixElement": {
+    "message": "Fix an element"
+  },
+  "reportSite": {
+    "message": "Report this site"
+  },
+  "sectionFixes": {
+    "message": "Your fixes"
+  },
+  "fixesHelp": {
+    "message": "Made with \"Fix an element\" in the popup. Export them to contribute to the shared list."
+  },
+  "fixesEmpty": {
+    "message": "No fixes yet."
+  },
+  "exportFixes": {
+    "message": "Export"
+  },
+  "importFixes": {
+    "message": "Import"
+  },
+  "importDone": {
+    "message": "Imported $COUNT$ fixes.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "importFailed": {
+    "message": "This file is not a valid fix list."
+  },
+  "sharedFixesLabel": {
+    "message": "Use shared fixes"
+  },
+  "sharedFixesHelp": {
+    "message": "Fixes reviewed by the project, applied only when their signature checks out. Your own fixes come first."
+  },
+  "sharedFixesInfo": {
+    "message": "Version $VERSION$, $COUNT$ sites.",
+    "placeholders": {
+      "version": {
+        "content": "$1"
+      },
+      "count": {
+        "content": "$2"
+      }
+    }
+  },
+  "actionSetColor": {
+    "message": "$PROP$ $VALUE$",
+    "placeholders": {
+      "prop": {
+        "content": "$1"
+      },
+      "value": {
+        "content": "$2"
+      }
+    }
   }
 }

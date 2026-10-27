@@ -188,5 +188,65 @@
   },
   "cancel": {
     "message": "Annuler"
+  },
+  "fixElement": {
+    "message": "Corriger un élément"
+  },
+  "reportSite": {
+    "message": "Signaler ce site"
+  },
+  "sectionFixes": {
+    "message": "Vos correctifs"
+  },
+  "fixesHelp": {
+    "message": "Créés avec « Corriger un élément » dans le popup. Exportez-les pour contribuer à la liste partagée."
+  },
+  "fixesEmpty": {
+    "message": "Aucun correctif pour l’instant."
+  },
+  "exportFixes": {
+    "message": "Exporter"
+  },
+  "importFixes": {
+    "message": "Importer"
+  },
+  "importDone": {
+    "message": "$COUNT$ correctifs importés.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "importFailed": {
+    "message": "Ce fichier n’est pas une liste de correctifs valide."
+  },
+  "sharedFixesLabel": {
+    "message": "Utiliser les correctifs partagés"
+  },
+  "sharedFixesHelp": {
+    "message": "Correctifs relus par le projet, appliqués uniquement si leur signature est valide. Vos propres correctifs passent en premier."
+  },
+  "sharedFixesInfo": {
+    "message": "Version $VERSION$, $COUNT$ sites.",
+    "placeholders": {
+      "version": {
+        "content": "$1"
+      },
+      "count": {
+        "content": "$2"
+      }
+    }
+  },
+  "actionSetColor": {
+    "message": "$PROP$ $VALUE$",
+    "placeholders": {
+      "prop": {
+        "content": "$1"
+      },
+      "value": {
+        "content": "$2"
+      }
+    }
   }
 }

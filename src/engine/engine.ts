@@ -111,7 +111,8 @@ export class Engine {
   /** Rules for invert / force-dark / set-color fixes, appended to the document's base sheet. */
   #fixRules = '';
   #fixesKey = '';
-  #ignore: string | null = null;
+  /** Elements with a fix: the contrast pass leaves them to the fix. */
+  #fixed: string | null = null;
   #renderedOn = false;
 
   constructor(osDark: () => boolean, onNative: (marker: NativeMarker | null) => void) {
@@ -123,7 +124,7 @@ export class Engine {
     this.#contrast = new ContrastPass(
       (el, hex) => this.#scopeOf(el.getRootNode())?.addFix(hex),
       () => this.#on && this.#ready,
-      (el) => this.#ignore !== null && el.closest(this.#ignore) !== null,
+      (el) => this.#fixed !== null && el.closest(this.#fixed) !== null,
     );
     this.#context = {
       store: this.#store,
@@ -180,10 +181,11 @@ export class Engine {
     if (key === this.#fixesKey) return;
     this.#fixesKey = key;
     const ignore = fixes.filter((fix) => fix.action === 'ignore').map((fix) => fix.selector);
-    this.#ignore = ignore.length ? ignore.join(',') : null;
+    this.#fixed = fixes.length ? fixes.map((fix) => fix.selector).join(',') : null;
     this.#fixRules = fixes.map(fixRule).join('');
-    this.#store.setScopeLimit(this.#ignore);
-    if (this.#started) this.#regenerate();
+    this.#store.setScopeLimit(ignore.length ? ignore.join(',') : null);
+    // Also before start: the document base sheet carries the fix rules.
+    this.#regenerate();
   }
 
   /** Re-apply a marker remembered from a previous visit, before first paint. */

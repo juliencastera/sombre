@@ -3,16 +3,6 @@ import { launchContext } from '../../bench/browser.ts';
 import { FIXTURE_ORIGIN, PATHS } from '../../bench/config.ts';
 import { startFixtureServers } from '../../bench/server.ts';
 
-/** Extension APIs used by functions evaluated in the service worker. */
-declare const chrome: {
-  scripting: { getRegisteredContentScripts(): Promise<unknown[]> };
-  storage: { local: { get(key: string | null): Promise<Record<string, any>>; set(items: object): Promise<void> } };
-  tabs: {
-    query(info: object): Promise<{ id?: number }[]>;
-    sendMessage(tabId: number, message: unknown, options?: object): Promise<unknown>;
-  };
-};
-
 interface Fixtures {
   /** UI language of the browser (override per test with `test.use({ lang: 'fr' })`). */
   lang: string;

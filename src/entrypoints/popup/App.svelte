@@ -1,6 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { REPO_URL } from '../../shared/config.ts';
   import { t } from '../../shared/i18n.ts';
+  import { browserName, issueUrl } from '../../shared/report.ts';
   import type { GetStateRequest, PageState } from '../../shared/messages.ts';
   import {
     DEFAULT_SETTINGS,
@@ -34,6 +36,7 @@
   let page = $state<PageState | null>(null);
   let loaded = $state(false);
   let shortcut = $state('');
+  let tabId = $state<number | undefined>(undefined);
 
   const effective = $derived(page ? resolveEffective(settings, page.hostname, osDark) : null);
   const siteState = $derived.by<SiteState | null>(() => {
@@ -46,7 +49,7 @@
 
   onMount(async () => {
     settings = normalizeSettings((await browser.storage.local.get(SETTINGS_KEY))[SETTINGS_KEY]);
-    const tabId = tabParam ? Number(tabParam) : (await browser.tabs.query({ active: true, currentWindow: true }))[0]?.id;
+    tabId = tabParam ? Number(tabParam) : (await browser.tabs.query({ active: true, currentWindow: true }))[0]?.id;
     if (tabId !== undefined) {
       const request: GetStateRequest = { type: 'sombre:get-state' };
       page = await browser.tabs.sendMessage(tabId, request, { frameId: 0 }).catch(() => null);
@@ -59,6 +62,26 @@
   async function save(next: Settings) {
     settings = next;
     await browser.storage.local.set({ [SETTINGS_KEY]: $state.snapshot(next) });
+  }
+
+  /** Inject the element picker into the page (three clicks to a fix: this one, the element, the action). */
+  async function pickElement() {
+    if (tabId === undefined) return;
+    await browser.scripting.executeScript({ target: { tabId, frameIds: [0] }, files: ['/picker.js'] });
+    window.close();
+  }
+
+  function report() {
+    if (!page || !effective) return;
+    const url = issueUrl(REPO_URL, {
+      hostname: page.hostname,
+      version: browser.runtime.getManifest().version,
+      contrast: settings.contrast,
+      state: nativeInUse ? t('nativeStatus') : t(REASONS[effective.reason]),
+      native: page.native,
+      browser: browserName(navigator.userAgent),
+    });
+    void browser.tabs.create({ url });
   }
 
   function setSite(state: SiteState | 'default') {
@@ -101,6 +124,15 @@
         ]}
         onchange={setSite}
       />
+    </section>
+
+    <section class="actions">
+      {#if effective.on}
+        <button type="button" class="action" onclick={pickElement}>✎ {t('fixElement')}</button>
+      {/if}
+      {#if REPO_URL}
+        <button type="button" class="action" onclick={report}>⚑ {t('reportSite')}</button>
+      {/if}
     </section>
   {:else if loaded}
     <header>
@@ -217,6 +249,36 @@
     display: flex;
     gap: 8px;
     align-items: center;
+  }
+
+  .actions {
+    display: grid;
+    gap: 2px;
+    margin: -6px 0 -4px;
+  }
+
+  .actions:empty {
+    display: none;
+  }
+
+  .action {
+    padding: 7px 8px;
+    margin: 0 -8px;
+    border: 0;
+    border-radius: 7px;
+    background: transparent;
+    color: var(--text-1);
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .action:hover {
+    background: var(--surface-2);
+  }
+
+  .action:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
   }
 
   .shortcut {

@@ -53,7 +53,8 @@ export class MirrorStore {
   }
 
   wrap(css: string): string {
-    return css && this.#scopeLimit ? `@scope to (${this.#scopeLimit}){${css}}` : css;
+    // An explicit root: without one, Chrome finds no scoping root for adopted sheets.
+    return css && this.#scopeLimit ? `@scope (:root) to (${this.#scopeLimit}){${css}}` : css;
   }
 
   /** A new Sombre-owned sheet, enabled or disabled like all the others. */
@@ -163,7 +164,8 @@ export class MirrorStore {
         ? (this.#remote.get(source.href) ?? '')
         : '';
     if (media && css) css = `@media ${media}{${css}}`;
-    css = this.wrap(css);
+    // Fixes target the document; a :root scope would match nothing inside shadow trees.
+    if (!(source.ownerNode?.getRootNode() instanceof ShadowRoot)) css = this.wrap(css);
 
     const sheet = entry?.sheet ?? this.create();
     if (entry?.css !== css) sheet.replaceSync(css);

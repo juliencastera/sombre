@@ -1,6 +1,14 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { CACHE_INDEX_KEY, CACHE_PREFIX, type CacheIndex } from '../../shared/cache.ts';
+  import {
+    LOCAL_FIXES_KEY,
+    SHARED_FIXES_KEY,
+    validateFixList,
+    validateSites,
+    type Fix,
+    type FixList,
+  } from '../../shared/fixes.ts';
   import { t } from '../../shared/i18n.ts';
   import {
     DEFAULT_SETTINGS,
@@ -20,6 +28,12 @@
   let native = $state<Record<string, NativeVerdict>>({});
   let cacheIndex = $state<CacheIndex>({});
   let shortcut = $state('');
+  let localFixes = $state<Record<string, Fix[]>>({});
+  let sharedList = $state<FixList | undefined>(undefined);
+  let importMessage = $state('');
+  let fileInput: HTMLInputElement | undefined = $state();
+
+  const fixSites = $derived(Object.keys(localFixes).sort());
 
   const sites = $derived(Object.keys(settings.sites).sort());
   const nativeSites = $derived(Object.keys(native).sort());
@@ -27,7 +41,15 @@
   const version = browser.runtime.getManifest().version;
 
   async function load() {
-    const stored = await browser.storage.local.get([SETTINGS_KEY, NATIVE_KEY, CACHE_INDEX_KEY]);
+    const stored = await browser.storage.local.get([
+      SETTINGS_KEY,
+      NATIVE_KEY,
+      CACHE_INDEX_KEY,
+      LOCAL_FIXES_KEY,
+      SHARED_FIXES_KEY,
+    ]);
+    localFixes = validateSites(stored[LOCAL_FIXES_KEY]);
+    sharedList = stored[SHARED_FIXES_KEY] as FixList | undefined;
     settings = normalizeSettings(stored[SETTINGS_KEY]);
     native = normalizeNative(stored[NATIVE_KEY]);
     cacheIndex = (stored[CACHE_INDEX_KEY] ?? {}) as CacheIndex;
@@ -64,6 +86,56 @@
     delete next[key];
     native = next;
     await browser.storage.local.set({ [NATIVE_KEY]: next });
+  }
+
+  function actionLabel(fix: Fix): string {
+    if (fix.action === 'set-color') return t('actionSetColor', fix.property ?? '', fix.value ?? '');
+    return t({ ignore: 'fixIgnore', invert: 'fixInvert', 'force-dark': 'fixForceDark' }[fix.action]);
+  }
+
+  async function saveFixes(next: Record<string, Fix[]>) {
+    localFixes = next;
+    await browser.storage.local.set({ [LOCAL_FIXES_KEY]: $state.snapshot(next) });
+  }
+
+  function removeFix(site: string, index: number) {
+    const next = { ...localFixes, [site]: localFixes[site]!.filter((_, i) => i !== index) };
+    if (!next[site]!.length) delete next[site];
+    void saveFixes(next);
+  }
+
+  /** Export in the shared list's format, ready to contribute (fixes/fixes.json). */
+  function exportFixes() {
+    const list: FixList = { version: Date.now(), sites: $state.snapshot(localFixes) };
+    const url = URL.createObjectURL(new Blob([JSON.stringify(list, null, 2)], { type: 'application/json' }));
+    const link = Object.assign(document.createElement('a'), { href: url, download: 'sombre-fixes.json' });
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async function importFixes(event: Event & { currentTarget: HTMLInputElement }) {
+    const file = event.currentTarget.files?.[0];
+    event.currentTarget.value = '';
+    if (!file) return;
+    let list: FixList | null = null;
+    try {
+      list = validateFixList(JSON.parse(await file.text()));
+    } catch {
+      // Not JSON.
+    }
+    if (!list) {
+      importMessage = t('importFailed');
+      return;
+    }
+    const next = { ...localFixes };
+    let count = 0;
+    for (const [site, fixes] of Object.entries(list.sites)) {
+      const kept = (next[site] ?? []).filter((fix) => !fixes.some((incoming) => incoming.selector === fix.selector));
+      next[site] = [...kept, ...fixes];
+      count += fixes.length;
+    }
+    await saveFixes(next);
+    importMessage = t('importDone', String(count));
   }
 
   async function clearCache() {
@@ -179,6 +251,52 @@
     {/if}
   </section>
 
+  <section aria-labelledby="fixes">
+    <h2 id="fixes">{t('sectionFixes')}</h2>
+    <p class="help">{t('fixesHelp')}</p>
+    {#if fixSites.length}
+      <ul class="list" data-testid="fixes">
+        {#each fixSites as site (site)}
+          {#each localFixes[site] ?? [] as fix, index (fix.selector)}
+            <li>
+              <span class="site">{site} <code>{fix.selector}</code></span>
+              <span class="tag">{actionLabel(fix)}</span>
+              <button type="button" class="link-button" onclick={() => removeFix(site, index)}>{t('remove')}</button>
+            </li>
+          {/each}
+        {/each}
+      </ul>
+    {:else}
+      <p class="empty">{t('fixesEmpty')}</p>
+    {/if}
+    <div class="inline start">
+      <button type="button" class="link-button" disabled={!fixSites.length} onclick={exportFixes}>{t('exportFixes')}</button>
+      <button type="button" class="link-button" onclick={() => fileInput?.click()}>{t('importFixes')}</button>
+      <input bind:this={fileInput} type="file" accept="application/json,.json" hidden onchange={importFixes} />
+      {#if importMessage}<span class="help" role="status">{importMessage}</span>{/if}
+    </div>
+
+    <div class="row">
+      <div>
+        <h3>{t('sharedFixesLabel')}</h3>
+        <p class="help">
+          {t('sharedFixesHelp')}
+          {#if sharedList}
+            <br />{t('sharedFixesInfo', String(sharedList.version), String(Object.keys(sharedList.sites).length))}
+          {/if}
+        </p>
+      </div>
+      <label class="switch">
+        <input
+          type="checkbox"
+          checked={settings.sharedFixes}
+          onchange={(event) => void save({ ...settings, sharedFixes: event.currentTarget.checked })}
+        />
+        {t('sharedFixesLabel')}
+      </label>
+    </div>
+  </section>
+
   <section aria-labelledby="cache">
     <h2 id="cache">{t('sectionCache')}</h2>
     <div class="row">
@@ -286,6 +404,37 @@
     flex: 1;
     min-width: 0;
     overflow-wrap: anywhere;
+  }
+
+  .start {
+    justify-content: flex-start;
+    margin-top: 12px;
+  }
+
+  code {
+    margin-left: 6px;
+    color: var(--text-2);
+    font: 12px ui-monospace, SFMono-Regular, Consolas, monospace;
+  }
+
+  .link-button:disabled {
+    color: var(--text-3);
+    cursor: default;
+    text-decoration: none;
+  }
+
+  .switch {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    justify-self: end;
+    color: var(--text-2);
+  }
+
+  .switch input {
+    accent-color: var(--accent);
+    width: 16px;
+    height: 16px;
   }
 
   .tag {

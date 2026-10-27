@@ -6,6 +6,7 @@ describe('validateFix', () => {
   it('accepts the closed set of actions', () => {
     expect(validateFix({ selector: '.logo', action: 'invert' })).toEqual({ selector: '.logo', action: 'invert' });
     expect(validateFix({ selector: '#app', action: 'ignore' })).toEqual({ selector: '#app', action: 'ignore' });
+    expect(validateFix({ selector: 'main > p:nth-of-type(2)', action: 'invert' })?.selector).toBe('main > p:nth-of-type(2)');
     expect(validateFix({ selector: '.x', action: 'set-color', property: 'color', value: '#ABCDEF' })).toEqual({
       selector: '.x',
       action: 'set-color',
