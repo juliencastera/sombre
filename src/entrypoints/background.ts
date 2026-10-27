@@ -1,4 +1,7 @@
 import { CACHE_INDEX_KEY, CACHE_PREFIX, evictions, type CacheIndex } from '../shared/cache.ts';
+import { SHARED_FIXES_URL } from '../shared/config.ts';
+import { FIXES_PUBLIC_KEY } from '../shared/fixes-key.ts';
+import { SHARED_FIXES_KEY, verifyFixList, type FixList } from '../shared/fixes.ts';
 import type { ContentRequest, FetchCssRequest, FetchCssResponse } from '../shared/messages.ts';
 import { NATIVE_KEY, normalizeSettings, SETTINGS_KEY, sitePatterns } from '../shared/settings.ts';
 
@@ -50,6 +53,31 @@ async function evictCache(index: CacheIndex): Promise<void> {
   await browser.storage.local.set({ [CACHE_INDEX_KEY]: index });
 }
 
+const FIXES_ALARM = 'sombre:refresh-fixes';
+
+/**
+ * Keep the newest valid shared fix list: the one bundled with this version,
+ * or the remote one (refreshed daily) when it is newer. Anything unsigned,
+ * tampered or invalid is ignored and the last valid list stays in place.
+ */
+async function refreshSharedFixes(): Promise<void> {
+  const current = (await browser.storage.local.get(SHARED_FIXES_KEY))[SHARED_FIXES_KEY] as FixList | undefined;
+  let best = current;
+  const sources: [string, RequestInit][] = [[browser.runtime.getURL('/fixes.signed.json'), {}]];
+  if (SHARED_FIXES_URL) sources.push([SHARED_FIXES_URL, { cache: 'no-cache', credentials: 'omit' }]);
+  for (const [url, init] of sources) {
+    try {
+      const response = await fetch(url, init);
+      if (!response.ok) continue;
+      const list = await verifyFixList(await response.json(), FIXES_PUBLIC_KEY);
+      if (list && (!best || list.version > best.version)) best = list;
+    } catch {
+      // Offline or unreachable: keep the last valid list.
+    }
+  }
+  if (best && best !== current) await browser.storage.local.set({ [SHARED_FIXES_KEY]: best });
+}
+
 let syncQueue = Promise.resolve();
 function queueSync(): void {
   syncQueue = syncQueue.then(syncRegistrations).catch((error) => console.error('[sombre] registration failed', error));
@@ -90,8 +118,15 @@ async function fetchCss(url: string, frameUrl: string | undefined): Promise<Fetc
 }
 
 export default defineBackground(() => {
-  browser.runtime.onInstalled.addListener(queueSync);
+  browser.runtime.onInstalled.addListener(() => {
+    queueSync();
+    void refreshSharedFixes();
+    void browser.alarms.create(FIXES_ALARM, { periodInMinutes: 24 * 60 });
+  });
   browser.runtime.onStartup.addListener(queueSync);
+  browser.alarms.onAlarm.addListener((alarm) => {
+    if (alarm.name === FIXES_ALARM) void refreshSharedFixes();
+  });
   browser.storage.onChanged.addListener((changes, area) => {
     if (area !== 'local') return;
     if (SETTINGS_KEY in changes || NATIVE_KEY in changes) queueSync();

@@ -8,6 +8,7 @@ import {
   type CacheEntry,
   type CacheIndex,
 } from '../shared/cache.ts';
+import { fixesFor, LOCAL_FIXES_KEY, SHARED_FIXES_KEY, type Fix, type FixList } from '../shared/fixes.ts';
 import type { ContentRequest, PageState } from '../shared/messages.ts';
 import {
   findSiteKey,
@@ -41,6 +42,27 @@ async function recordNative(hostname: string, native: boolean, marker: NativeMar
   if (native) stored[key] = { at: Date.now(), ...(marker && { marker }) };
   else delete stored[key];
   await browser.storage.local.set({ [NATIVE_KEY]: stored });
+}
+
+/**
+ * Fixes for this page: the user's first, then the shared list. Both are validated when
+ * written (picker, import, background); selectors this browser rejects are dropped here.
+ */
+function pageFixes(
+  hostname: string,
+  local: Record<string, Fix[]> | undefined,
+  shared: FixList | undefined,
+  useShared: boolean,
+): Fix[] {
+  const fixes = [...fixesFor(local ?? {}, hostname), ...(useShared && shared ? fixesFor(shared.sites, hostname) : [])];
+  return fixes.filter((fix) => {
+    try {
+      document.querySelector(fix.selector);
+      return true;
+    } catch {
+      return false;
+    }
+  });
 }
 
 /** Merge this page's fetched-stylesheet mirrors into the site's cache entry. */
@@ -84,9 +106,19 @@ export default defineUnlistedScript(async () => {
 
   const key = siteKey(hostname);
   const cacheKey = CACHE_PREFIX + key;
-  const stored = await browser.storage.local.get([SETTINGS_KEY, NATIVE_KEY, ...(isTop ? [cacheKey] : [])]);
+  const stored = await browser.storage.local.get([
+    SETTINGS_KEY,
+    NATIVE_KEY,
+    LOCAL_FIXES_KEY,
+    SHARED_FIXES_KEY,
+    ...(isTop ? [cacheKey] : []),
+  ]);
   let settings: Settings = normalizeSettings(stored[SETTINGS_KEY]);
   engine.setContrast(settings.contrast);
+  let localFixes = stored[LOCAL_FIXES_KEY] as Record<string, Fix[]> | undefined;
+  let sharedFixes = stored[SHARED_FIXES_KEY] as FixList | undefined;
+  const applyFixes = () => engine.setFixes(pageFixes(hostname, localFixes, sharedFixes, settings.sharedFixes));
+  applyFixes();
   const verdict = normalizeNative(stored[NATIVE_KEY])[key];
   const startsOn = resolveEffective(settings, hostname, osQuery.matches).on;
   if (verdict?.marker && startsOn) engine.applyRememberedMarker(verdict.marker);
@@ -108,8 +140,12 @@ export default defineUnlistedScript(async () => {
   };
 
   browser.storage.onChanged.addListener((changes, area) => {
-    if (area !== 'local' || !(SETTINGS_KEY in changes)) return;
-    settings = normalizeSettings(changes[SETTINGS_KEY]!.newValue);
+    if (area !== 'local') return;
+    if (LOCAL_FIXES_KEY in changes) localFixes = changes[LOCAL_FIXES_KEY]!.newValue as Record<string, Fix[]> | undefined;
+    if (SHARED_FIXES_KEY in changes) sharedFixes = changes[SHARED_FIXES_KEY]!.newValue as FixList | undefined;
+    if (SETTINGS_KEY in changes) settings = normalizeSettings(changes[SETTINGS_KEY]!.newValue);
+    if (LOCAL_FIXES_KEY in changes || SHARED_FIXES_KEY in changes || SETTINGS_KEY in changes) applyFixes();
+    if (!(SETTINGS_KEY in changes)) return;
     engine.setContrast(settings.contrast);
     void update(true);
   });

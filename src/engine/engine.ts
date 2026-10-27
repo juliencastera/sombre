@@ -1,4 +1,5 @@
 import { formatColor } from '../shared/color/parse.ts';
+import type { Fix } from '../shared/fixes.ts';
 import type { ContrastLevel, NativeMarker } from '../shared/settings.ts';
 import { ContrastPass } from './contrast.ts';
 import type { GenerateOptions } from './generate.ts';
@@ -32,6 +33,21 @@ const baseRules = () =>
 /** Shadow-root counterpart of the base layer's pre-ready guard (the base layer cannot pierce shadow roots). */
 const guardRules = () =>
   `*{background-color:${canvas()}!important;color:${canvasText()}!important;border-color:${border()}!important}`;
+
+/** CSS for one invert / force-dark / set-color fix (`ignore` works through the mirrors' scope limit). */
+function fixRule(fix: Fix): string {
+  const s = fix.selector;
+  switch (fix.action) {
+    case 'invert':
+      return `:is(${s}){filter:invert(1) hue-rotate(180deg)!important}`;
+    case 'force-dark':
+      return `:is(${s}),:is(${s}) *{background-color:${canvas()}!important;color:${canvasText()}!important;border-color:${border()}!important}`;
+    case 'set-color':
+      return `:is(${s}){${fix.property}:${fix.value}!important}`;
+    default:
+      return '';
+  }
+}
 
 const timeout = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
@@ -92,6 +108,10 @@ export class Engine {
   #ready = false;
   #flushQueued = false;
   #rendered = false;
+  /** Rules for invert / force-dark / set-color fixes, appended to the document's base sheet. */
+  #fixRules = '';
+  #fixesKey = '';
+  #ignore: string | null = null;
   #renderedOn = false;
 
   constructor(osDark: () => boolean, onNative: (marker: NativeMarker | null) => void) {
@@ -103,6 +123,7 @@ export class Engine {
     this.#contrast = new ContrastPass(
       (el, hex) => this.#scopeOf(el.getRootNode())?.addFix(hex),
       () => this.#on && this.#ready,
+      (el) => this.#ignore !== null && el.closest(this.#ignore) !== null,
     );
     this.#context = {
       store: this.#store,
@@ -111,7 +132,7 @@ export class Engine {
       schedule: (scope) => this.#schedule(scope),
       discoverShadowRoots: (node) => this.#discoverShadowRoots(node),
       watchText: (node) => this.#contrast.watch(node),
-      baseRules,
+      baseRules: () => baseRules() + this.#fixRules,
     };
     this.#documentScope = this.#register(new Scope(document, this.#context));
     this.#listen();
@@ -151,6 +172,18 @@ export class Engine {
   /** Mirrors of the stylesheets fetched on this page, by URL, for the per-site cache. */
   cachedSheets(): Record<string, string> {
     return this.#store.remoteSnapshot();
+  }
+
+  /** Apply site fixes (spec §8). Selectors must already be valid for this document. */
+  setFixes(fixes: Fix[]): void {
+    const key = JSON.stringify(fixes);
+    if (key === this.#fixesKey) return;
+    this.#fixesKey = key;
+    const ignore = fixes.filter((fix) => fix.action === 'ignore').map((fix) => fix.selector);
+    this.#ignore = ignore.length ? ignore.join(',') : null;
+    this.#fixRules = fixes.map(fixRule).join('');
+    this.#store.setScopeLimit(this.#ignore);
+    if (this.#started) this.#regenerate();
   }
 
   /** Re-apply a marker remembered from a previous visit, before first paint. */
@@ -252,7 +285,8 @@ export class Engine {
   }
 
   #addShadowRoot(root: ShadowRoot): void {
-    if (this.#shadowScopes.has(root)) return;
+    // Sombre's own UI (element picker) is styled on its own.
+    if (this.#shadowScopes.has(root) || root.host.hasAttribute('data-sombre-ui')) return;
     const scope = this.#register(new Scope(root, this.#context));
     this.#shadowScopes.set(root, scope);
     if (!this.#ready && this.#baseActive()) scope.adoptGuard();

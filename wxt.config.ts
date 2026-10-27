@@ -8,7 +8,7 @@ export default defineConfig({
     description: '__MSG_extDescription__',
     default_locale: 'en',
     action: { default_title: '__MSG_extName__' },
-    permissions: ['storage', 'scripting', 'unlimitedStorage'],
+    permissions: ['storage', 'scripting', 'unlimitedStorage', 'alarms'],
     // Every site may need the base layer, and cross-origin stylesheets must be fetched by the background.
     host_permissions: ['<all_urls>'],
     commands: {

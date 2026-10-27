@@ -59,10 +59,12 @@ export class AttributeStyles {
   readonly #seen = new Set<string>();
   readonly #scratch = document.createElement('div');
   readonly #options: GenerateOptions;
+  readonly #wrap: (rule: string) => string;
 
-  constructor(sheet: CSSStyleSheet, options: GenerateOptions) {
+  constructor(sheet: CSSStyleSheet, options: GenerateOptions, wrap: (rule: string) => string) {
     this.sheet = sheet;
     this.#options = options;
+    this.#wrap = wrap;
   }
 
   /** Drop every generated rule (colors changed) before rescanning. */
@@ -108,7 +110,7 @@ export class AttributeStyles {
 
   #add(rule: string): void {
     try {
-      this.sheet.insertRule(rule, this.sheet.cssRules.length);
+      this.sheet.insertRule(this.#wrap(rule), this.sheet.cssRules.length);
     } catch {
       // Selector the parser rejects (exotic characters): nothing to mirror.
     }

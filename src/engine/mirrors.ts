@@ -27,6 +27,8 @@ export class MirrorStore {
   readonly #options: GenerateOptions;
   readonly #remote: RemoteSheets;
   #disabled = true;
+  /** Selector list of elements Sombre must leave untouched (`ignore` fixes), or null. */
+  #scopeLimit: string | null = null;
   #epoch = 0;
   #generation = 0;
 
@@ -37,6 +39,21 @@ export class MirrorStore {
       onRemoteLoaded();
     });
     this.#options = { ...options, resolveImport: (url) => this.#remote.get(url) };
+  }
+
+  /**
+   * Leave elements matching `limit` (and their content) untouched: every
+   * generated rule is wrapped in `@scope to (limit)`, whose lower boundary
+   * excludes them. Regenerates everything.
+   */
+  setScopeLimit(limit: string | null): void {
+    if (limit === this.#scopeLimit) return;
+    this.#scopeLimit = limit;
+    this.invalidateAll();
+  }
+
+  wrap(css: string): string {
+    return css && this.#scopeLimit ? `@scope to (${this.#scopeLimit}){${css}}` : css;
   }
 
   /** A new Sombre-owned sheet, enabled or disabled like all the others. */
@@ -109,7 +126,7 @@ export class MirrorStore {
     const key = `${media}|${link.href}`;
     let sheet = this.#early.get(key);
     if (!sheet) {
-      sheet = this.create(media ? `@media ${media}{${css}}` : css);
+      sheet = this.create(this.wrap(media ? `@media ${media}{${css}}` : css));
       this.#early.set(key, sheet);
     }
     return sheet;
@@ -146,6 +163,7 @@ export class MirrorStore {
         ? (this.#remote.get(source.href) ?? '')
         : '';
     if (media && css) css = `@media ${media}{${css}}`;
+    css = this.wrap(css);
 
     const sheet = entry?.sheet ?? this.create();
     if (entry?.css !== css) sheet.replaceSync(css);

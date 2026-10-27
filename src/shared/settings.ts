@@ -15,6 +15,8 @@ export interface Settings {
   /** Keyed by site key (hostname without `www.`); applies to subdomains too. */
   sites: Record<string, SiteState>;
   contrast: ContrastLevel;
+  /** Apply the shared, signed fix list on top of the user's own fixes. */
+  sharedFixes: boolean;
 }
 
 export const SETTINGS_KEY = 'sombre:settings';
@@ -36,7 +38,7 @@ export interface NativeVerdict {
   marker?: NativeMarker;
 }
 
-export const DEFAULT_SETTINGS: Settings = { mode: 'auto', sites: {}, contrast: 'standard' };
+export const DEFAULT_SETTINGS: Settings = { mode: 'auto', sites: {}, contrast: 'standard', sharedFixes: true };
 
 export type Reason = 'site-dark' | 'site-never' | 'mode-dark' | 'mode-light' | 'auto-dark' | 'auto-light';
 
@@ -103,7 +105,8 @@ export function normalizeSettings(value: unknown): Settings {
     if (state === 'dark' || state === 'never') sites[key] = state;
   }
   const contrast = raw.contrast && raw.contrast in CONTRAST_TARGETS ? raw.contrast : DEFAULT_SETTINGS.contrast;
-  return { mode, sites, contrast };
+  const sharedFixes = typeof raw.sharedFixes === 'boolean' ? raw.sharedFixes : DEFAULT_SETTINGS.sharedFixes;
+  return { mode, sites, contrast, sharedFixes };
 }
 
 export function normalizeNative(value: unknown): Record<string, NativeVerdict> {

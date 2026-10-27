@@ -28,11 +28,13 @@ export class ContrastPass {
   readonly #watched = new WeakSet<Element>();
   readonly #addRule: (el: Element, hex: string) => void;
   readonly #active: () => boolean;
+  readonly #ignored: (el: Element) => boolean;
   #queued = false;
 
-  constructor(addRule: (el: Element, hex: string) => void, active: () => boolean) {
+  constructor(addRule: (el: Element, hex: string) => void, active: () => boolean, ignored: (el: Element) => boolean) {
     this.#addRule = addRule;
     this.#active = active;
+    this.#ignored = ignored;
     this.#io = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
@@ -72,7 +74,7 @@ export class ContrastPass {
 
   #run(): void {
     if (!this.#active()) return;
-    const elements = [...this.#visible].filter((el) => el.isConnected);
+    const elements = [...this.#visible].filter((el) => el.isConnected && !this.#ignored(el));
     const canvas = canvasColor(document.documentElement, true);
     const backgrounds = new Map<Element, Rgb | null>();
 

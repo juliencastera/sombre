@@ -19,7 +19,9 @@
     "bench:setup": "node bench/scripts/setup.ts",
     "bench:record": "node bench/scripts/record.ts",
     "bench": "node bench/run.ts",
-    "test:e2e": "wxt build && playwright test"
+    "test:e2e": "wxt build && playwright test",
+    "fixes:keygen": "node scripts/fixes-keygen.ts",
+    "fixes:sign": "node scripts/sign-fixes.ts"
   },
   "devDependencies": {
     "@playwright/test": "1.64.1",

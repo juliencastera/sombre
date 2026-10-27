@@ -66,6 +66,7 @@ describe('normalizeSettings', () => {
       mode: 'auto',
       sites: { 'a.com': 'dark' },
       contrast: 'standard',
+      sharedFixes: true,
     });
     expect(normalizeSettings(undefined)).toEqual(DEFAULT_SETTINGS);
     expect(normalizeSettings({ contrast: 'high' }).contrast).toBe('high');
