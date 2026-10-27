@@ -21,6 +21,15 @@ test('dark icons get an inverted copy, light pictures stay', async ({ context })
   expect(await backgroundImage(page, '.photo')).toMatch(/^url\("https:\/\/sombre-bench\.dev\/icons\/photo\.svg"\)$/);
 });
 
+test('later rules keep overriding earlier ones the mirrors change', async ({ context }) => {
+  const page = await context.newPage();
+  await page.goto(fixture('icons'));
+  await expect.poll(() => backgroundImage(page, '.compose', '::before')).toContain('data:image/svg+xml');
+  await page.waitForTimeout(300);
+  expect(await page.evaluate(() => getComputedStyle(document.querySelector('.box')!).backgroundColor)).toBe('rgba(0, 0, 0, 0)');
+  expect(await backgroundImage(page, '.marker')).toContain('photo.svg');
+});
+
 test('a mask-image icon is drawn in a light ink', async ({ context }) => {
   const page = await context.newPage();
   await page.goto(fixture('icons'));
@@ -41,5 +50,5 @@ test('icon analyses are cached with the site', async ({ context, worker }) => {
         .map(([, result]) => (result.startsWith('data:') ? result.slice(0, 14) : result))
         .sort();
     });
-  await expect.poll(icons).toEqual(['-', 'data:image/png', 'data:image/svg']);
+  await expect.poll(icons).toEqual(['-', 'data:image/png', 'data:image/svg', 'data:image/svg']);
 });

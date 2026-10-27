@@ -2,7 +2,7 @@ import { formatColor, parseColor } from '../shared/color/parse.ts';
 import type { Rgba } from '../shared/color/types.ts';
 import { fixTextColor } from './contrast-math.ts';
 import { contrastTarget, ROLES, type Role } from './transform.ts';
-import { channelTwins, rewriteValue, roleVariable, type RewriteOptions } from './value.ts';
+import { channelTwins, mirrorValue, rewriteValue, roleVariable, type RewriteOptions } from './value.ts';
 
 export interface GenerateOptions extends RewriteOptions {
   /** Generated CSS for an `@import`ed sheet the page cannot read (cross-origin), or null if not loaded yet. */
@@ -108,13 +108,15 @@ export function declarations(style: CSSStyleDeclaration, options: GenerateOption
       pendingShorthand = true;
       continue;
     }
+    // Inline styles only get the declarations that change: theirs already win, ours add !important.
     if (property === 'background-image' && !value.includes('gradient') && !value.includes('var(')) {
       const url = options.icon && imageUrl(value, options.baseUrl);
       const variable = url && options.icon!(url);
       if (variable) out += `background-image:var(${variable},url(${JSON.stringify(url)}))${important};`;
+      else if (!forceImportant) out += `background-image:${mirrorValue(value, role, options)}${important};`;
       continue;
     }
-    const rewritten = rewriteValue(value, role, options);
+    const rewritten = forceImportant ? rewriteValue(value, role, options) : mirrorValue(value, role, options);
     if (rewritten === null) continue;
     if (property === 'color') {
       // Emitted last, once the rule's own background is known (rule-level contrast pass).

@@ -4,7 +4,7 @@ import { oklchToRgb, perceivedLightness, rgbToOklch } from '../../src/shared/col
 import { parseNamedColor } from '../../src/shared/color/named.ts';
 import { formatColor, parseColor } from '../../src/shared/color/parse.ts';
 import { PAGE_BG_L, transformColor } from '../../src/engine/transform.ts';
-import { channelTwins, channelVariable, rewriteValue, roleVariable } from '../../src/engine/value.ts';
+import { channelTwins, channelVariable, mirrorValue, rewriteValue, roleVariable } from '../../src/engine/value.ts';
 
 const rgba = (value: string) => parseColor(value)!;
 const L = (value: string, role: Parameters<typeof transformColor>[1]) => perceivedLightness(transformColor(rgba(value), role));
@@ -133,6 +133,14 @@ describe('rewriteValue', () => {
     expect(bg('transparent')).toBeNull();
     expect(bg('currentcolor')).toBeNull();
     expect(rewriteValue('currentcolor', 'bg', { resolveColor: () => ({ r: 0, g: 0, b: 0, a: 1 }) })).toBeNull();
+  });
+
+  it('keeps unchanged values for mirrors, so they still override earlier rules', () => {
+    // Gmail: `.T-Jo{background-color:rgba(255,255,255,.05)}` then `.T-Jo{background-color:transparent}`.
+    expect(mirrorValue('transparent', 'bg')).toBe('transparent');
+    expect(mirrorValue('none', 'bg')).toBe('none');
+    expect(mirrorValue('url(a.png)', 'bg', { baseUrl: 'https://cdn.example/css/' })).toBe('url("https://cdn.example/css/a.png")');
+    expect(mirrorValue('#fff', 'bg', { resolveColor })).toBe(bg('#fff'));
   });
 
   it('rewrites hex, functional and named colors', () => {

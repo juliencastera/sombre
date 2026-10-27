@@ -248,6 +248,16 @@ function rewriteVar(inner: string, role: Role, options: RewriteOptions): string 
  * Rewrite every color in a CSS value for the given role. Returns null when the
  * value contains no color and no variable (nothing to emit).
  */
+/**
+ * `value` for a mirrored rule: transformed, or as is (URLs made absolute) when
+ * nothing changes. Mirrors apply after every page sheet, so a declaration they
+ * leave out would let an earlier one it overrides win again (`transparent`
+ * after a tint, a kept image after one that is inverted).
+ */
+export function mirrorValue(value: string, role: Role, options: RewriteOptions = {}): string {
+  return /light-dark\(/i.test(value) ? value : rewrite(value, role, options).text;
+}
+
 export function rewriteValue(value: string, role: Role, options: RewriteOptions = {}): string | null {
   // light-dark() already carries the site's own dark color.
   if (/light-dark\(/i.test(value)) return null;

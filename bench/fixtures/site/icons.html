@@ -36,6 +36,20 @@
         height: 32px;
         background-image: url(icons/photo.svg);
       }
+      /* Gmail's row checkbox: a later rule clears an earlier tint. */
+      .box {
+        background-color: rgba(255, 255, 255, 0.05);
+      }
+      .box {
+        background-color: transparent;
+      }
+      /* Gmail's importance marker: the yellow (light, kept) flag overrides the dark outline (inverted). */
+      .row .marker {
+        background-image: url(icons/pencil.svg);
+      }
+      .marker.on {
+        background-image: url(icons/photo.svg);
+      }
       .masked {
         -webkit-mask: url(icons/pencil.svg) center / 24px no-repeat;
         background-color: #444746;
@@ -47,5 +61,6 @@
     <span class="icon mail"></span>
     <span class="icon photo"></span>
     <span class="icon masked"></span>
+    <span class="row"><span class="icon box"></span><span class="icon marker on"></span></span>
   </body>
 </html>
