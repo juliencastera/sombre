@@ -40,40 +40,40 @@ async function generateRemote(url: string, options: GenerateOptions, depth: numb
 }
 
 export class RemoteSheets {
-  private readonly done = new Map<string, string>();
-  private readonly pending = new Map<string, Promise<void>>();
-  private readonly options: GenerateOptions;
-  private readonly onLoaded: () => void;
+  readonly #done = new Map<string, string>();
+  readonly #pending = new Map<string, Promise<void>>();
+  readonly #options: GenerateOptions;
+  readonly #onLoaded: () => void;
 
   constructor(options: GenerateOptions, onLoaded: () => void) {
-    this.options = options;
-    this.onLoaded = onLoaded;
+    this.#options = options;
+    this.#onLoaded = onLoaded;
   }
 
   /** Generated CSS for `url`, or null while it is being fetched (a fetch is started on first call). */
   get(url: string): string | null {
-    const css = this.done.get(url);
+    const css = this.#done.get(url);
     if (css !== undefined) return css;
-    if (!this.pending.has(url)) {
-      const task = generateRemote(url, this.options, 0)
+    if (!this.#pending.has(url)) {
+      const task = generateRemote(url, this.#options, 0)
         .catch(() => '')
         .then((generated) => {
-          this.done.set(url, generated);
-          this.pending.delete(url);
-          this.onLoaded();
+          this.#done.set(url, generated);
+          this.#pending.delete(url);
+          this.#onLoaded();
         });
-      this.pending.set(url, task);
+      this.#pending.set(url, task);
     }
     return null;
   }
 
   /** Forget generated CSS (the contrast level changed); texts come back from the HTTP cache. */
   reset(): void {
-    this.done.clear();
+    this.#done.clear();
   }
 
   /** Resolves once every fetch started so far has settled. */
   async settled(): Promise<void> {
-    while (this.pending.size) await Promise.all(this.pending.values());
+    while (this.#pending.size) await Promise.all(this.#pending.values());
   }
 }

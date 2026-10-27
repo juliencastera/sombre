@@ -1,5 +1,6 @@
 import { formatColor, parseColor } from '../shared/color/parse.ts';
 import { declarations, type GenerateOptions } from './generate.ts';
+import { resolveColorInBrowser } from './resolve-color.ts';
 import { transformColor, type Role } from './transform.ts';
 
 /** Color attributes that act as presentational hints: any CSS rule overrides them. */
@@ -21,7 +22,7 @@ const COLOR_HINT = /color|background|border|fill|stroke|shadow|outline|--/i;
 
 /** HTML accepts colors without the leading `#` in legacy attributes. */
 function parseLegacyColor(value: string) {
-  return parseColor(value) ?? (/^[0-9a-f]{3,6}$/i.test(value) ? parseColor(`#${value}`) : null);
+  return parseColor(value) ?? (/^[0-9a-f]{3,6}$/i.test(value) ? parseColor(`#${value}`) : resolveColorInBrowser(value));
 }
 
 /** Split a style attribute into declarations, keeping each one's exact source text. */
@@ -55,18 +56,18 @@ function splitDeclarations(text: string): string[] {
  */
 export class AttributeStyles {
   readonly sheet: CSSStyleSheet;
-  private readonly seen = new Set<string>();
-  private readonly scratch = document.createElement('div');
-  private readonly options: GenerateOptions;
+  readonly #seen = new Set<string>();
+  readonly #scratch = document.createElement('div');
+  readonly #options: GenerateOptions;
 
   constructor(sheet: CSSStyleSheet, options: GenerateOptions) {
     this.sheet = sheet;
-    this.options = options;
+    this.#options = options;
   }
 
   /** Drop every generated rule (colors changed) before rescanning. */
   reset(): void {
-    this.seen.clear();
+    this.#seen.clear();
     this.sheet.replaceSync('');
   }
 
@@ -78,34 +79,34 @@ export class AttributeStyles {
 
   process(el: Element): void {
     const style = el.getAttribute('style');
-    if (style && COLOR_HINT.test(style)) this.processStyle(style);
+    if (style && COLOR_HINT.test(style)) this.#processStyle(style);
     for (const { tag, attribute, property, role } of PRESENTATIONAL) {
       const value = el.getAttribute(attribute);
       if (value === null || (tag && el.localName !== tag)) continue;
       const key = `${tag}[${attribute}=${value}`;
-      if (this.seen.has(key)) continue;
-      this.seen.add(key);
+      if (this.#seen.has(key)) continue;
+      this.#seen.add(key);
       const color = parseLegacyColor(value.trim());
       if (!color) continue;
       // :where(): like the hint it replaces, any page CSS rule still wins.
-      this.add(`:where(${tag}[${attribute}=${JSON.stringify(value)} i]){${property}:${formatColor(transformColor(color, role))}}`);
+      this.#add(`:where(${tag}[${attribute}=${JSON.stringify(value)} i]){${property}:${formatColor(transformColor(color, role))}}`);
     }
   }
 
-  private processStyle(text: string): void {
+  #processStyle(text: string): void {
     let first = true;
     for (const raw of splitDeclarations(text)) {
       const selector = first ? `[style^=${JSON.stringify(raw)}]` : `[style*=${JSON.stringify(`;${raw}`)}]`;
       first = false;
-      if (!raw.trim() || !COLOR_HINT.test(raw) || this.seen.has(selector)) continue;
-      this.seen.add(selector);
-      this.scratch.style.cssText = raw;
-      const body = declarations(this.scratch.style, this.options, true);
-      if (body) this.add(`${selector}{${body}}`);
+      if (!raw.trim() || !COLOR_HINT.test(raw) || this.#seen.has(selector)) continue;
+      this.#seen.add(selector);
+      this.#scratch.style.cssText = raw;
+      const body = declarations(this.#scratch.style, this.#options, true);
+      if (body) this.#add(`${selector}{${body}}`);
     }
   }
 
-  private add(rule: string): void {
+  #add(rule: string): void {
     try {
       this.sheet.insertRule(rule, this.sheet.cssRules.length);
     } catch {

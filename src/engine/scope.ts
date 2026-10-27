@@ -34,49 +34,49 @@ function sameSheets(a: readonly CSSStyleSheet[], b: readonly CSSStyleSheet[]): b
  */
 export class Scope {
   readonly root: Document | ShadowRoot;
-  private readonly context: ScopeContext;
-  private readonly attributes: AttributeStyles;
+  readonly #context: ScopeContext;
+  readonly #attributes: AttributeStyles;
   /** Document-only defaults for pages that style nothing. */
-  private readonly base: CSSStyleSheet | null;
+  readonly #base: CSSStyleSheet | null;
   /** One rule per contrast-fix color (see ContrastPass). */
-  private readonly fixes: CSSStyleSheet;
-  private readonly fixColors = new Set<string>();
-  private started = false;
+  readonly #fixes: CSSStyleSheet;
+  readonly #fixColors = new Set<string>();
+  #started = false;
 
   constructor(root: Document | ShadowRoot, context: ScopeContext) {
     this.root = root;
-    this.context = context;
-    this.base = root instanceof Document ? context.store.create(context.baseRules()) : null;
-    this.attributes = new AttributeStyles(context.store.create(), context.options);
-    this.fixes = context.store.create();
+    this.#context = context;
+    this.#base = root instanceof Document ? context.store.create(context.baseRules()) : null;
+    this.#attributes = new AttributeStyles(context.store.create(), context.options);
+    this.#fixes = context.store.create();
   }
 
   addFix(hex: string): void {
-    if (this.fixColors.has(hex)) return;
-    this.fixColors.add(hex);
-    this.fixes.insertRule(`[${FIX_ATTRIBUTE}="${hex}"]{color:#${hex}!important}`, this.fixes.cssRules.length);
+    if (this.#fixColors.has(hex)) return;
+    this.#fixColors.add(hex);
+    this.#fixes.insertRule(`[${FIX_ATTRIBUTE}="${hex}"]{color:#${hex}!important}`, this.#fixes.cssRules.length);
   }
 
   /** Colors changed (contrast level): regenerate everything this scope owns. */
   reset(): void {
-    this.base?.replaceSync(this.context.baseRules());
-    this.attributes.reset();
-    if (this.started) this.attributes.scan(this.root);
+    this.#base?.replaceSync(this.#context.baseRules());
+    this.#attributes.reset();
+    if (this.#started) this.#attributes.scan(this.root);
   }
 
   /** Adopt the pre-ready guard right away, before the page fills this shadow root. */
   adoptGuard(): void {
     const sheets = this.root.adoptedStyleSheets;
-    if (!sheets.includes(this.context.guard)) this.root.adoptedStyleSheets = [...sheets, this.context.guard];
+    if (!sheets.includes(this.#context.guard)) this.root.adoptedStyleSheets = [...sheets, this.#context.guard];
   }
 
   start(): void {
-    if (this.started) return;
-    this.started = true;
-    this.attributes.scan(this.root);
-    this.context.discoverShadowRoots(this.root);
-    this.context.watchText(this.root);
-    new MutationObserver((records) => this.onMutations(records)).observe(this.root, {
+    if (this.#started) return;
+    this.#started = true;
+    this.#attributes.scan(this.root);
+    this.#context.discoverShadowRoots(this.root);
+    this.#context.watchText(this.root);
+    new MutationObserver((records) => this.#onMutations(records)).observe(this.root, {
       childList: true,
       subtree: true,
       characterData: true,
@@ -87,12 +87,12 @@ export class Scope {
   }
 
   rebuild(): void {
-    if (!this.started) return;
-    const { store, guard } = this.context;
+    if (!this.#started) return;
+    const { store, guard } = this.#context;
     const page = this.root.adoptedStyleSheets.filter((sheet) => !store.isOurs(sheet) && sheet !== guard);
     const ours: CSSStyleSheet[] = [];
-    if (this.base) ours.push(this.base);
-    ours.push(this.attributes.sheet);
+    if (this.#base) ours.push(this.#base);
+    ours.push(this.#attributes.sheet);
     for (const source of [...this.root.styleSheets, ...page]) {
       const mirror = store.mirrorOf(source);
       if (mirror) ours.push(mirror);
@@ -101,19 +101,19 @@ export class Scope {
       const early = link.sheet ? null : store.earlyMirrorOf(link);
       if (early) ours.push(early);
     }
-    ours.push(this.fixes);
+    ours.push(this.#fixes);
     const hasGuard = this.root.adoptedStyleSheets.includes(guard);
     // Ours last: mirrors win every specificity tie against the page.
     const next = [...page, ...(hasGuard ? [guard] : []), ...ours];
     if (!sameSheets(this.root.adoptedStyleSheets, next)) this.root.adoptedStyleSheets = next;
   }
 
-  private onMutations(records: MutationRecord[]): void {
+  #onMutations(records: MutationRecord[]): void {
     let dirty = false;
     for (const record of records) {
       if (record.type === 'attributes') {
         const target = record.target as Element;
-        if (STYLE_ATTRIBUTES.includes(record.attributeName!)) this.attributes.process(target);
+        if (STYLE_ATTRIBUTES.includes(record.attributeName!)) this.#attributes.process(target);
         else if (target.localName === 'link' || target.localName === 'style') dirty = true;
       } else if (record.type === 'characterData') {
         if (record.target.parentNode?.nodeName === 'STYLE') dirty = true;
@@ -121,18 +121,18 @@ export class Scope {
         if (record.target.nodeName === 'STYLE') dirty = true;
         for (const node of record.addedNodes) {
           if (!(node instanceof Element)) continue;
-          this.attributes.scan(node);
-          this.context.discoverShadowRoots(node);
-          this.context.watchText(node);
+          this.#attributes.scan(node);
+          this.#context.discoverShadowRoots(node);
+          this.#context.watchText(node);
           if (isStyleSource(node)) {
             dirty = true;
-            if (node instanceof HTMLLinkElement) this.context.store.prefetch(node);
-            else for (const link of node.querySelectorAll('link')) this.context.store.prefetch(link);
+            if (node instanceof HTMLLinkElement) this.#context.store.prefetch(node);
+            else for (const link of node.querySelectorAll('link')) this.#context.store.prefetch(link);
           }
         }
         for (const node of record.removedNodes) if (isStyleSource(node)) dirty = true;
       }
     }
-    if (dirty) this.context.schedule(this);
+    if (dirty) this.#context.schedule(this);
   }
 }

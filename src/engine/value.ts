@@ -1,15 +1,28 @@
-import { formatColor, isNamedColor, parseColor } from '../shared/color/parse.ts';
+import { formatColor, parseColor } from '../shared/color/parse.ts';
 import type { Rgba } from '../shared/color/types.ts';
 import { transformColor, type Role } from './transform.ts';
 
 export interface RewriteOptions {
   /** Base URL to absolutize `url()` against: our sheet is not served from the original stylesheet's URL. */
   baseUrl?: string | null;
-  /** Fallback for color syntaxes `parseColor` does not handle (lab(), oklch(), color()…). */
+  /** Fallback for colors `parseColor` does not handle: named colors, lab(), oklch(), color()… */
   resolveColor?: (text: string) => Rgba | null;
 }
 
 const COLOR_FUNCTION = /^(?:rgba?|hsla?|hwb|lab|lch|oklab|oklch|color)$/;
+
+/**
+ * Identifiers the browser resolves to a color but that must not be transformed:
+ * `currentcolor` follows text, `transparent` stays so, system colors already
+ * follow the color scheme we set.
+ */
+const NOT_NAMED_COLORS = new Set(
+  (
+    'currentcolor transparent inherit initial unset revert none auto canvas canvastext linktext ' +
+    'visitedtext activetext buttonface buttontext buttonborder field fieldtext highlight highlighttext ' +
+    'selecteditem selecteditemtext mark marktext graytext accentcolor accentcolortext'
+  ).split(' '),
+);
 
 /**
  * Name of the role-specific twin of a custom property. A variable can feed both
@@ -179,8 +192,8 @@ function rewrite(s: string, role: Role, options: RewriteOptions): Result {
           i = close + 1;
           continue;
         }
-        if (isNamedColor(ident)) out += color(parseColor(ident)!);
-        else out += ident;
+        const named = /^[a-z]+$/i.test(ident) && !NOT_NAMED_COLORS.has(ident.toLowerCase()) ? options.resolveColor?.(ident) : null;
+        out += named ? color(named) : ident;
         i += ident.length;
         continue;
       }

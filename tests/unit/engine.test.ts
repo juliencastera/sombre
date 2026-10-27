@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { apcaContrast } from '../../src/shared/color/apca.ts';
 import { oklchToRgb, perceivedLightness, rgbToOklch } from '../../src/shared/color/oklab.ts';
+import { parseNamedColor } from '../../src/shared/color/named.ts';
 import { formatColor, parseColor } from '../../src/shared/color/parse.ts';
 import { PAGE_BG_L, transformColor } from '../../src/engine/transform.ts';
 import { channelTwins, channelVariable, rewriteValue, roleVariable } from '../../src/engine/value.ts';
@@ -18,13 +19,12 @@ describe('parseColor', () => {
     ['rgb(10 20 30 / 50%)', { r: 10, g: 20, b: 30, a: 0.5 }],
     ['hsl(0 100% 50%)', { r: 255, g: 0, b: 0, a: 1 }],
     ['hsla(120, 100%, 25%, 0.5)', { r: 0, g: 127.5, b: 0, a: 0.5 }],
-    ['RebeccaPurple', { r: 0x66, g: 0x33, b: 0x99, a: 1 }],
     ['transparent', { r: 0, g: 0, b: 0, a: 0 }],
   ])('%s', (input, expected) => {
     expect(parseColor(input)).toEqual(expected);
   });
 
-  it.each(['oklch(0.5 0.1 120)', 'currentcolor', 'Canvas', 'rgb(from red r g b)', 'rgb(var(--x))', '#ggg'])(
+  it.each(['oklch(0.5 0.1 120)', 'white', 'currentcolor', 'Canvas', 'rgb(from red r g b)', 'rgb(var(--x))', '#ggg'])(
     'leaves %s to the browser',
     (input) => expect(parseColor(input)).toBeNull(),
   );
@@ -32,6 +32,13 @@ describe('parseColor', () => {
   it('formats opaque colors as hex and translucent ones as rgb()', () => {
     expect(formatColor({ r: 255, g: 0, b: 16, a: 1 })).toBe('#ff0010');
     expect(formatColor({ r: 1, g: 2, b: 3, a: 0.5 })).toBe('rgb(1 2 3 / 0.5)');
+  });
+});
+
+describe('parseNamedColor', () => {
+  it('knows CSS named colors, case-insensitively', () => {
+    expect(parseNamedColor('RebeccaPurple')).toEqual({ r: 0x66, g: 0x33, b: 0x99, a: 1 });
+    expect(parseNamedColor('solid')).toBeNull();
   });
 });
 
@@ -86,13 +93,16 @@ describe('transformColor', () => {
 });
 
 describe('rewriteValue', () => {
-  const bg = (value: string, options = {}) => rewriteValue(value, 'bg', options);
+  // Outside a browser, named colors come from the table the content script leaves to the browser.
+  const resolveColor = (text: string) => parseNamedColor(text);
+  const bg = (value: string, options = {}) => rewriteValue(value, 'bg', { resolveColor, ...options });
 
   it('returns null when there is nothing to rewrite', () => {
     expect(bg('none')).toBeNull();
     expect(bg('url(a.png) no-repeat')).toBeNull();
     expect(bg('transparent')).toBeNull();
     expect(bg('currentcolor')).toBeNull();
+    expect(rewriteValue('currentcolor', 'bg', { resolveColor: () => ({ r: 0, g: 0, b: 0, a: 1 }) })).toBeNull();
   });
 
   it('rewrites hex, functional and named colors', () => {

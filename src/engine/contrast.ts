@@ -23,21 +23,21 @@ function parent(el: Element): Element | null {
  * Only text near the viewport is examined, during idle time.
  */
 export class ContrastPass {
-  private readonly io: IntersectionObserver;
-  private readonly visible = new Set<Element>();
-  private readonly watched = new WeakSet<Element>();
-  private readonly addRule: (el: Element, hex: string) => void;
-  private readonly active: () => boolean;
-  private queued = false;
+  readonly #io: IntersectionObserver;
+  readonly #visible = new Set<Element>();
+  readonly #watched = new WeakSet<Element>();
+  readonly #addRule: (el: Element, hex: string) => void;
+  readonly #active: () => boolean;
+  #queued = false;
 
   constructor(addRule: (el: Element, hex: string) => void, active: () => boolean) {
-    this.addRule = addRule;
-    this.active = active;
-    this.io = new IntersectionObserver(
+    this.#addRule = addRule;
+    this.#active = active;
+    this.#io = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
-          if (entry.isIntersecting) this.visible.add(entry.target);
-          else this.visible.delete(entry.target);
+          if (entry.isIntersecting) this.#visible.add(entry.target);
+          else this.#visible.delete(entry.target);
         }
         this.schedule();
       },
@@ -50,29 +50,29 @@ export class ContrastPass {
     const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
     for (let node = walker.nextNode(); node; node = walker.nextNode()) {
       const el = node.parentElement;
-      if (!el || this.watched.has(el) || !node.nodeValue?.trim()) continue;
+      if (!el || this.#watched.has(el) || !node.nodeValue?.trim()) continue;
       if (el.localName === 'script' || el.localName === 'style' || el.localName === 'noscript') continue;
-      this.watched.add(el);
-      this.io.observe(el);
+      this.#watched.add(el);
+      this.#io.observe(el);
     }
   }
 
   /** Styles changed: re-evaluate what is on screen. */
   schedule(): void {
-    if (this.queued) return;
-    this.queued = true;
+    if (this.#queued) return;
+    this.#queued = true;
     requestIdleCallback(
       () => {
-        this.queued = false;
-        this.run();
+        this.#queued = false;
+        this.#run();
       },
       { timeout: 300 },
     );
   }
 
-  private run(): void {
-    if (!this.active()) return;
-    const elements = [...this.visible].filter((el) => el.isConnected);
+  #run(): void {
+    if (!this.#active()) return;
+    const elements = [...this.#visible].filter((el) => el.isConnected);
     const canvas = canvasColor(document.documentElement, true);
     const backgrounds = new Map<Element, Rgb | null>();
 
@@ -111,7 +111,7 @@ export class ContrastPass {
       if (fixed) fixes.push([el, formatColor({ ...fixed, a: 1 }).slice(1)]);
     }
     for (const [el, hex] of fixes) {
-      this.addRule(el, hex);
+      this.#addRule(el, hex);
       el.setAttribute(FIX_ATTRIBUTE, hex);
     }
   }
