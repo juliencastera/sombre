@@ -64,6 +64,12 @@ export class AttributeStyles {
     this.options = options;
   }
 
+  /** Drop every generated rule (colors changed) before rescanning. */
+  reset(): void {
+    this.seen.clear();
+    this.sheet.replaceSync('');
+  }
+
   /** Process `root` (if an element) and every element below it carrying a color attribute. */
   scan(root: ParentNode): void {
     if (root instanceof Element && root.matches(ATTRIBUTE_SELECTOR)) this.process(root);

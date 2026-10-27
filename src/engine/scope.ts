@@ -1,4 +1,5 @@
 import { AttributeStyles, STYLE_ATTRIBUTES } from './attributes.ts';
+import { FIX_ATTRIBUTE } from './contrast.ts';
 import type { GenerateOptions } from './generate.ts';
 import type { MirrorStore } from './mirrors.ts';
 
@@ -10,6 +11,10 @@ export interface ScopeContext {
   schedule(scope: Scope): void;
   /** Register open shadow roots found in `node`'s subtree (and `node` itself). */
   discoverShadowRoots(node: Node): void;
+  /** Start contrast monitoring of the text under `node`. */
+  watchText(node: Node): void;
+  /** Base rules for the document scope (they depend on the contrast level). */
+  baseRules(): string;
 }
 
 const SOURCE_SELECTOR = 'style,link';
@@ -33,13 +38,30 @@ export class Scope {
   private readonly attributes: AttributeStyles;
   /** Document-only defaults for pages that style nothing. */
   private readonly base: CSSStyleSheet | null;
+  /** One rule per contrast-fix color (see ContrastPass). */
+  private readonly fixes: CSSStyleSheet;
+  private readonly fixColors = new Set<string>();
   private started = false;
 
-  constructor(root: Document | ShadowRoot, context: ScopeContext, baseCss?: string) {
+  constructor(root: Document | ShadowRoot, context: ScopeContext) {
     this.root = root;
     this.context = context;
-    this.base = baseCss ? context.store.create(baseCss) : null;
+    this.base = root instanceof Document ? context.store.create(context.baseRules()) : null;
     this.attributes = new AttributeStyles(context.store.create(), context.options);
+    this.fixes = context.store.create();
+  }
+
+  addFix(hex: string): void {
+    if (this.fixColors.has(hex)) return;
+    this.fixColors.add(hex);
+    this.fixes.insertRule(`[${FIX_ATTRIBUTE}="${hex}"]{color:#${hex}!important}`, this.fixes.cssRules.length);
+  }
+
+  /** Colors changed (contrast level): regenerate everything this scope owns. */
+  reset(): void {
+    this.base?.replaceSync(this.context.baseRules());
+    this.attributes.reset();
+    if (this.started) this.attributes.scan(this.root);
   }
 
   /** Adopt the pre-ready guard right away, before the page fills this shadow root. */
@@ -53,6 +75,7 @@ export class Scope {
     this.started = true;
     this.attributes.scan(this.root);
     this.context.discoverShadowRoots(this.root);
+    this.context.watchText(this.root);
     new MutationObserver((records) => this.onMutations(records)).observe(this.root, {
       childList: true,
       subtree: true,
@@ -74,6 +97,11 @@ export class Scope {
       const mirror = store.mirrorOf(source);
       if (mirror) ours.push(mirror);
     }
+    for (const link of this.root.querySelectorAll<HTMLLinkElement>('link[rel~="stylesheet" i]')) {
+      const early = link.sheet ? null : store.earlyMirrorOf(link);
+      if (early) ours.push(early);
+    }
+    ours.push(this.fixes);
     const hasGuard = this.root.adoptedStyleSheets.includes(guard);
     // Ours last: mirrors win every specificity tie against the page.
     const next = [...page, ...(hasGuard ? [guard] : []), ...ours];
@@ -95,7 +123,12 @@ export class Scope {
           if (!(node instanceof Element)) continue;
           this.attributes.scan(node);
           this.context.discoverShadowRoots(node);
-          if (isStyleSource(node)) dirty = true;
+          this.context.watchText(node);
+          if (isStyleSource(node)) {
+            dirty = true;
+            if (node instanceof HTMLLinkElement) this.context.store.prefetch(node);
+            else for (const link of node.querySelectorAll('link')) this.context.store.prefetch(link);
+          }
         }
         for (const node of record.removedNodes) if (isStyleSource(node)) dirty = true;
       }

@@ -1,10 +1,12 @@
 import { formatColor } from '../shared/color/parse.ts';
+import type { ContrastLevel, NativeMarker } from '../shared/settings.ts';
+import { ContrastPass } from './contrast.ts';
 import type { GenerateOptions } from './generate.ts';
 import { MirrorStore } from './mirrors.ts';
-import { pageLooksDark } from './native.ts';
+import { applyMarker, findNativeMarkers, pageLooksDark } from './native.ts';
 import { resolveColorInBrowser } from './resolve-color.ts';
 import { Scope, type ScopeContext } from './scope.ts';
-import { transformColor } from './transform.ts';
+import { contrastLevel, setContrastLevel, setPreserveDark, transformColor } from './transform.ts';
 
 /** `off` disables the base layer; anything else (or absent) keeps it. See public/base-*.css. */
 const STATE_ATTR = 'data-sombre';
@@ -20,13 +22,15 @@ const LINK_TIMEOUT_MS = 2000;
 const REMOTE_TIMEOUT_MS = 2500;
 const DOM_READY_TIMEOUT_MS = 1000;
 
-const CANVAS = formatColor(transformColor({ r: 255, g: 255, b: 255, a: 1 }, 'bg'));
-const CANVAS_TEXT = formatColor(transformColor({ r: 0, g: 0, b: 0, a: 1 }, 'fg'));
-const BORDER = formatColor(transformColor({ r: 221, g: 221, b: 221, a: 1 }, 'border'));
+const canvas = () => formatColor(transformColor({ r: 255, g: 255, b: 255, a: 1 }, 'bg'));
+const canvasText = () => formatColor(transformColor({ r: 0, g: 0, b: 0, a: 1 }, 'fg'));
+const border = () => formatColor(transformColor({ r: 221, g: 221, b: 221, a: 1 }, 'border'));
 /** Defaults for pages that style nothing; zero specificity so any mirrored page rule wins. */
-const BASE_RULES = `:where(:root){background-color:${CANVAS};color:${CANVAS_TEXT}}:root{color-scheme:dark!important}`;
+const baseRules = () =>
+  `:where(:root){background-color:${canvas()};color:${canvasText()}}:root{color-scheme:dark!important}`;
 /** Shadow-root counterpart of the base layer's pre-ready guard (the base layer cannot pierce shadow roots). */
-const GUARD_RULES = `*{background-color:${CANVAS}!important;color:${CANVAS_TEXT}!important;border-color:${BORDER}!important}`;
+const guardRules = () =>
+  `*{background-color:${canvas()}!important;color:${canvasText()}!important;border-color:${border()}!important}`;
 
 const timeout = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
@@ -66,7 +70,7 @@ export interface EnableOptions {
  * regeneration.
  */
 export class Engine {
-  /** The page ships its own dark theme; the engine stays out of the way. */
+  /** The page ships its own dark theme: the engine only fixes its light leftovers (preserve mode). */
   native = false;
 
   private readonly store: MirrorStore;
@@ -77,28 +81,68 @@ export class Engine {
   private readonly allScopes = new Set<WeakRef<Scope>>();
   private readonly pending = new Set<Scope>();
   private readonly osDark: () => boolean;
-  private readonly onNative: () => void;
+  private readonly onNative: (marker: NativeMarker | null) => void;
+  private readonly contrast: ContrastPass;
+  /** Marker Sombre applied to switch the site's own dark theme on. */
+  private marker: NativeMarker | null = null;
   private on = false;
   private starting: Promise<void> | null = null;
   private started = false;
   private ready = false;
   private flushQueued = false;
 
-  constructor(osDark: () => boolean, onNative: () => void) {
+  constructor(osDark: () => boolean, onNative: (marker: NativeMarker | null) => void) {
     this.osDark = osDark;
     this.onNative = onNative;
     const options: GenerateOptions = { resolveColor: resolveColorInBrowser };
     this.store = new MirrorStore(options, () => this.scheduleAll());
-    this.guard.replaceSync(GUARD_RULES);
+    this.guard.replaceSync(guardRules());
+    this.contrast = new ContrastPass(
+      (el, hex) => this.scopeOf(el.getRootNode())?.addFix(hex),
+      () => this.on && this.ready,
+    );
     this.context = {
       store: this.store,
       options,
       guard: this.guard,
       schedule: (scope) => this.schedule(scope),
       discoverShadowRoots: (node) => this.discoverShadowRoots(node),
+      watchText: (node) => this.contrast.watch(node),
+      baseRules,
     };
-    this.documentScope = this.register(new Scope(document, this.context, BASE_RULES));
+    this.documentScope = this.register(new Scope(document, this.context));
     this.listen();
+  }
+
+  /** Apply a contrast level; regenerates every mirror when it changes after start. */
+  setContrast(level: ContrastLevel): void {
+    if (level === contrastLevel()) return;
+    setContrastLevel(level);
+    this.regenerate();
+  }
+
+  /** Colors changed (contrast level, native mode): rebuild every Sombre sheet. */
+  private regenerate(): void {
+    this.guard.replaceSync(guardRules());
+    this.store.invalidateAll();
+    this.forEachScope((scope) => scope.reset());
+    this.scheduleAll();
+  }
+
+  /** Native dark theme: keep its dark parts as designed, only fix light leftovers. */
+  private setNative(native: boolean): void {
+    if (native === this.native) return;
+    this.native = native;
+    setPreserveDark(native);
+    if (this.started) this.regenerate();
+  }
+
+  /** Re-apply a marker remembered from a previous visit, before first paint. */
+  applyRememberedMarker(marker: NativeMarker): void {
+    this.marker = marker;
+    if (!applyMarker(marker, true)) {
+      document.addEventListener('DOMContentLoaded', () => applyMarker(marker, true), { once: true });
+    }
   }
 
   async setEnabled(on: boolean, options: EnableOptions): Promise<void> {
@@ -111,13 +155,14 @@ export class Engine {
   }
 
   private render(animate: boolean): void {
-    const active = this.on && !this.native;
+    const active = this.on;
     const apply = () => {
       const root = document.documentElement;
       root.setAttribute(STATE_ATTR, active ? 'on' : 'off');
       if (this.ready) root.setAttribute(READY_ATTR, '');
       this.store.setDisabled(!active);
       this.guard.disabled = !active || this.ready;
+      if (this.marker) applyMarker(this.marker, this.on);
     };
     const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (animate && !reducedMotion && document.visibilityState === 'visible' && 'startViewTransition' in document) {
@@ -125,26 +170,44 @@ export class Engine {
     } else {
       apply();
     }
+    if (active && this.ready) this.contrast.schedule();
   }
 
   private async start(ignoreNative: boolean): Promise<void> {
     await domReady();
     await pendingLinks();
 
-    if (!ignoreNative && this.looksNative()) {
-      this.native = true;
-      this.guard.disabled = true;
-      this.onNative();
-      return;
+    if (!ignoreNative && (this.looksNative() || this.activateNativeTheme())) {
+      this.setNative(true);
+      this.onNative(this.marker);
+    } else if (this.marker) {
+      // A remembered marker no longer yields a dark page, or the user forced the engine.
+      applyMarker(this.marker, false);
+      this.marker = null;
     }
+    await this.startEngine();
+    if (!ignoreNative) this.recheckNativeAfterLoad();
+  }
 
+  private async startEngine(): Promise<void> {
     this.started = true;
     this.forEachScope((scope) => scope.start());
     await Promise.race([this.store.settled(), timeout(REMOTE_TIMEOUT_MS)]);
     this.flush();
     this.ready = true;
+  }
 
-    if (!ignoreNative) this.recheckNativeAfterLoad();
+  /** Try the site's own dark theme switches (`.dark`, `[data-theme="dark"]`…); keep the first that works. */
+  private activateNativeTheme(): boolean {
+    for (const marker of findNativeMarkers()) {
+      if (!applyMarker(marker, true)) continue;
+      if (this.looksNative()) {
+        this.marker = marker;
+        return true;
+      }
+      applyMarker(marker, false);
+    }
+    return false;
   }
 
   // ── Scopes ────────────────────────────────────────────────────────────────
@@ -191,7 +254,7 @@ export class Engine {
   // ── Rebuild scheduling ────────────────────────────────────────────────────
 
   private schedule(scope: Scope): void {
-    if (!this.started || this.native) return;
+    if (!this.started) return;
     this.pending.add(scope);
     if (this.flushQueued) return;
     this.flushQueued = true;
@@ -208,6 +271,7 @@ export class Engine {
     const scopes = [...this.pending];
     this.pending.clear();
     for (const scope of scopes) scope.rebuild();
+    if (this.ready) this.contrast.schedule();
   }
 
   /** Signals from the MAIN-world hooks, which see what the page does to the CSSOM. */
@@ -260,7 +324,7 @@ export class Engine {
   // ── Native dark themes ────────────────────────────────────────────────────
 
   /** Evaluate the page's own colors with every Sombre style disabled. Synchronous: nothing paints meanwhile. */
-  private looksNative(): boolean {
+  private looksNative(canvasOnly = false): boolean {
     const root = document.documentElement;
     const previous = root.getAttribute(STATE_ATTR);
     const guardDisabled = this.guard.disabled;
@@ -268,22 +332,31 @@ export class Engine {
     this.store.setDisabled(true);
     this.guard.disabled = true;
     try {
-      return pageLooksDark(this.osDark());
+      return pageLooksDark(this.osDark(), canvasOnly);
     } finally {
       if (previous === null) root.removeAttribute(STATE_ATTR);
       else root.setAttribute(STATE_ATTR, previous);
-      this.store.setDisabled(!(this.on && !this.native && this.ready));
+      this.store.setDisabled(!(this.on && this.ready));
       this.guard.disabled = guardDisabled;
     }
   }
 
-  /** Some sites apply their dark theme from script after DOMContentLoaded. */
+  /**
+   * After `load`: some sites apply their dark theme from script, and some reset
+   * the class or attribute Sombre used to switch theirs on.
+   */
   private recheckNativeAfterLoad(): void {
     const check = () => {
-      if (!this.native && this.looksNative()) {
-        this.native = true;
-        this.onNative();
-        this.render(false);
+      if (!this.on) return;
+      // While native, only the page canvas counts: a light overlay (consent wall) is not the site dropping its theme.
+      const dark = this.looksNative(this.native);
+      if (!this.native && dark) {
+        this.setNative(true);
+        this.onNative(null);
+      } else if (this.native && !dark) {
+        if (this.marker) applyMarker(this.marker, false);
+        this.marker = null;
+        this.setNative(false);
       }
     };
     if (document.readyState === 'complete') check();

@@ -6,6 +6,12 @@ const MAX_IMPORT_DEPTH = 4;
 const IMPORT_RULE = /@import\s+(?:url\(\s*)?(['"]?)([^'")\s]+)\1\s*\)?([^;]*);/g;
 
 async function fetchText(url: string): Promise<string> {
+  if (new URL(url).origin === location.origin) {
+    // Same origin: fetch from the page context, sharing its HTTP cache and cookies.
+    const response = await fetch(url, { credentials: 'same-origin' });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return response.text();
+  }
   const request: FetchCssRequest = { type: 'sombre:fetch-css', url };
   const response: FetchCssResponse = await browser.runtime.sendMessage(request);
   if (!response?.ok) throw new Error(response?.error ?? 'no response');
@@ -59,6 +65,11 @@ export class RemoteSheets {
       this.pending.set(url, task);
     }
     return null;
+  }
+
+  /** Forget generated CSS (the contrast level changed); texts come back from the HTTP cache. */
+  reset(): void {
+    this.done.clear();
   }
 
   /** Resolves once every fetch started so far has settled. */

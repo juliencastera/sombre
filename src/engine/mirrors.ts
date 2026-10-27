@@ -9,6 +9,8 @@ interface Entry {
   dirty: boolean;
   /** Constructed-sheet epoch at generation (see `markConstructedDirty`). */
   epoch: number;
+  /** Store generation at generation (see `invalidateAll`). */
+  generation: number;
 }
 
 /**
@@ -20,10 +22,13 @@ export class MirrorStore {
   private readonly entries = new WeakMap<CSSStyleSheet, Entry>();
   private readonly ours = new WeakSet<CSSStyleSheet>();
   private readonly all = new Set<WeakRef<CSSStyleSheet>>();
+  /** Mirrors generated from fetched text for <link>s the browser has not applied yet. */
+  private readonly early = new Map<string, CSSStyleSheet>();
   private readonly options: GenerateOptions;
   private readonly remote: RemoteSheets;
   private disabled = true;
   private epoch = 0;
+  private generation = 0;
 
   constructor(options: GenerateOptions, onRemoteLoaded: () => void) {
     this.remote = new RemoteSheets(options, () => {
@@ -68,6 +73,40 @@ export class MirrorStore {
     this.epoch++;
   }
 
+  /** Every mirror must be regenerated (the contrast level changed). */
+  invalidateAll(): void {
+    this.generation++;
+    this.remote.reset();
+    this.early.clear();
+  }
+
+  /**
+   * Start fetching a stylesheet as soon as its <link> appears, in parallel with
+   * the browser, so its mirror can be in place before the sheet applies.
+   */
+  prefetch(link: HTMLLinkElement): void {
+    if (/\bstylesheet\b/i.test(link.rel) && link.href && !link.sheet) this.remote.get(link.href);
+  }
+
+  /**
+   * Mirror of a <link> still loading, generated from its fetched text: adopted
+   * ahead of time, it is already there in the frame where the page sheet first
+   * applies, so late stylesheets (consent walls, lazy chunks) never flash.
+   */
+  earlyMirrorOf(link: HTMLLinkElement): CSSStyleSheet | null {
+    if (!link.href || link.disabled || link.sheet) return null;
+    const css = this.remote.get(link.href);
+    if (!css) return null;
+    const media = link.media && link.media !== 'all' ? link.media : '';
+    const key = `${media}|${link.href}`;
+    let sheet = this.early.get(key);
+    if (!sheet) {
+      sheet = this.create(media ? `@media ${media}{${css}}` : css);
+      this.early.set(key, sheet);
+    }
+    return sheet;
+  }
+
   settled(): Promise<void> {
     return this.remote.settled();
   }
@@ -88,6 +127,7 @@ export class MirrorStore {
       entry &&
       !entry.dirty &&
       entry.count === count &&
+      entry.generation === this.generation &&
       (!(constructed || !rules) || entry.epoch === this.epoch);
     if (fresh) return entry.css ? entry.sheet : null;
 
@@ -101,7 +141,7 @@ export class MirrorStore {
 
     const sheet = entry?.sheet ?? this.create();
     if (entry?.css !== css) sheet.replaceSync(css);
-    this.entries.set(source, { sheet, css, count, dirty: false, epoch: this.epoch });
+    this.entries.set(source, { sheet, css, count, dirty: false, epoch: this.epoch, generation: this.generation });
     return css ? sheet : null;
   }
 }
