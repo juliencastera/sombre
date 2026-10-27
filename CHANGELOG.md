@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.1](https://github.com/juliencastera/sombre/compare/v1.0.0...v1.0.1) (2026-10-27)
+
+
+### Bug Fixes
+
+* **manifest:** require Chrome 137 and link the project homepage ([245a146](https://github.com/juliencastera/sombre/commit/245a14643a6a944b1ec6e111f196c4faf13a5913))
+
 ## 1.0.0 (2026-10-28)
 
 First release.
