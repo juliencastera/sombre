@@ -111,7 +111,9 @@ The popup states this and offers "Use Sombre's engine instead" (the site's Dark 
 - Toggle = flip `data-sombre` on `<html>` (base layer) **and** the sheet's `disabled`
   flag in the same frame → single style recalc, no re-analysis.
 - Wrapped in `document.startViewTransition()` for a GPU crossfade (~150–200 ms);
-  skipped when `prefers-reduced-motion: reduce`.
+  skipped when `prefers-reduced-motion: reduce`, and on pages over 1500 elements: the
+  snapshot costs about a frame per few thousand elements (heavy fixture: 85 ms with the
+  transition, 27 ms without), so large pages switch instantly rather than late.
 - Keyboard shortcut via `chrome.commands` (default `Alt+Shift+D`, same as Dark Reader's:
   disable it while both are installed). The shortcut toggles **the current site**
   (create/remove a site exception), not the global default; the toolbar click opens the popup (§7).
@@ -124,11 +126,18 @@ The popup states this and offers "Use Sombre's engine instead" (the site's Dark 
 
 - Storage: `chrome.storage.local` + `unlimitedStorage` permission.
   The async read gap is covered by the base layer (worst case: generic dark for a few ms, never white).
-- Strategy: **stale-while-revalidate** — apply cached CSS immediately, re-run analysis
-  in background, patch + rewrite cache if the result differs. Stale rules whose
-  selectors no longer match are harmless.
-- Key: `domain + engineVersion + contrastLevel` (extension update invalidates everything).
-- Eviction: LRU, cap ~200 domains / ~20 MB.
+- **Granularity (revised in M4): mirrors of fetched stylesheets, by stylesheet URL**, per
+  site. A whole-page cache was tried first and dropped: it lifted the base layer's guard
+  with a theme generated for another page (Amazon serves an interstitial that reloads
+  into the real page) and left the real page's cards white for ~1 s; and snapshots of the
+  same page differed between visits (lazily loaded stylesheets). A per-URL mirror can
+  only ever apply to the stylesheet it was generated from.
+- Strategy: **stale-while-revalidate** — a cached mirror is served as soon as its `<link>`
+  appears (no network wait, also for late stylesheets), and the stylesheet is refetched
+  in background; the mirror is replaced if it changed.
+- Key: `site + extensionVersion + contrastLevel + nativeMode`; pages of a site merge into
+  one entry (2 MB per site, least recently seen stylesheets dropped).
+- Eviction: LRU in the background, cap 200 sites / 20 MB.
 - Optional later spike: per-domain `chrome.scripting.registerContentScripts({ css })`
   for native zero-latency injection. Validate scaling behavior before adopting.
 
@@ -237,7 +246,7 @@ Sources, in priority order: **user local fixes** > **remote signed list** > **bu
 | Manifest | MV3 |
 | Language | TypeScript (strict) |
 | Extension framework / build | WXT (Vite) |
-| Content script | Vanilla TS, zero dependencies, target < 30 KB minified |
+| Content script | Vanilla TS, zero dependencies, built as a WXT unlisted script declared in the manifest (no WXT content script runtime). Budget revised to < 32 KB minified in M4 (31.5 KB with contrast passes, native themes and cache); Chrome code-caches extension scripts, so the remaining cost is negligible |
 | Popup / options | Svelte 5 |
 | Unit tests | Vitest (color math, APCA, rule rewriting) |
 | E2E / benchmark | Playwright with extension loaded |
