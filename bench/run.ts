@@ -30,6 +30,7 @@ const { values: args } = parseArgs({
     scheme: { type: 'string', default: 'dark' },
     har: { type: 'string', default: 'replay' },
     headed: { type: 'boolean', default: false },
+    'reduced-motion': { type: 'boolean', default: false },
   },
 });
 
@@ -99,7 +100,12 @@ async function runOne(site: Site, target: Target, runDir: string): Promise<RunRe
   }
 
   const startedAt = Date.now();
-  const context = await launchContext({ extensionPath: target.extensionPath, headed: args.headed, scheme });
+  const context = await launchContext({
+    extensionPath: target.extensionPath,
+    headed: args.headed,
+    scheme,
+    reducedMotion: args['reduced-motion'],
+  });
   try {
     if (site.auth) {
       const state = JSON.parse(await readFile(PATHS.authState, 'utf8'));

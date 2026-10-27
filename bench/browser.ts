@@ -7,6 +7,7 @@ export interface LaunchOptions {
   extensionPath?: string;
   headed: boolean;
   scheme: ColorScheme;
+  reducedMotion?: boolean;
 }
 
 /** Route the fixture hostnames to the local HTTPS servers, for pages and extension workers alike. */
@@ -23,13 +24,14 @@ const FIXTURE_ARGS = [
  * caches and a freshly installed extension. Extensions require a persistent
  * context, and the `chromium` channel keeps them working in headless mode.
  */
-export function launchContext({ extensionPath, headed, scheme }: LaunchOptions): Promise<BrowserContext> {
+export function launchContext({ extensionPath, headed, scheme, reducedMotion = false }: LaunchOptions): Promise<BrowserContext> {
   return chromium.launchPersistentContext('', {
     channel: 'chromium',
     headless: !headed,
     viewport: VIEWPORT,
     deviceScaleFactor: 1,
     colorScheme: scheme,
+    reducedMotion: reducedMotion ? 'reduce' : 'no-preference',
     args: [
       ...FIXTURE_ARGS,
       ...(extensionPath ? [`--disable-extensions-except=${extensionPath}`, `--load-extension=${extensionPath}`] : []),
