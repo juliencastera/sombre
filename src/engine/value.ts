@@ -124,9 +124,12 @@ interface Result {
 function rewrite(s: string, role: Role, options: RewriteOptions): Result {
   let out = '';
   let changed = false;
-  const color = (rgba: Rgba) => {
+  // Colors the transform leaves as they are (preserve mode) keep their source text and do not count as a change.
+  const color = (rgba: Rgba, source: string) => {
+    const transformed = transformColor(rgba, role);
+    if (transformed === rgba) return source;
     changed = true;
-    return formatColor(transformColor(rgba, role));
+    return formatColor(transformed);
   };
 
   for (let i = 0; i < s.length; ) {
@@ -144,7 +147,7 @@ function rewrite(s: string, role: Role, options: RewriteOptions): Result {
       const hex = /^#[0-9a-f]{3,8}(?![\w-])/i.exec(s.slice(i, i + 10))?.[0];
       const parsed = hex ? parseColor(hex) : null;
       if (hex && parsed) {
-        out += color(parsed);
+        out += color(parsed, hex);
         i += hex.length;
         continue;
       }
@@ -178,7 +181,7 @@ function rewrite(s: string, role: Role, options: RewriteOptions): Result {
           } else if (COLOR_FUNCTION.test(name)) {
             const parsed = parseColor(whole) ?? options.resolveColor?.(whole) ?? null;
             const variableAlpha = parsed ? null : withVariableAlpha(name, inner, role);
-            if (parsed) out += color(parsed);
+            if (parsed) out += color(parsed, whole);
             else if (variableAlpha) {
               out += variableAlpha;
               changed = true;
@@ -193,7 +196,7 @@ function rewrite(s: string, role: Role, options: RewriteOptions): Result {
           continue;
         }
         const named = /^[a-z]+$/i.test(ident) && !NOT_NAMED_COLORS.has(ident.toLowerCase()) ? options.resolveColor?.(ident) : null;
-        out += named ? color(named) : ident;
+        out += named ? color(named, ident) : ident;
         i += ident.length;
         continue;
       }

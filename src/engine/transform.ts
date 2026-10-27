@@ -91,19 +91,20 @@ function mapLightness(l: number, role: Role): number {
 /** Saturated colors look louder on dark backgrounds; tone chroma down a little. */
 const CHROMA_SCALE: Record<Role, number> = { bg: 0.8, fg: 0.95, border: 0.8, shadow: 1, invert: 0.9 };
 
-const cache = new Map<string, Rgba>();
+/** Cached results; `null` means the color is left as is (callers get their own object back). */
+const cache = new Map<string, Rgba | null>();
 
 export function transformColor(color: Rgba, role: Role): Rgba {
   const key = `${role}${color.r},${color.g},${color.b},${color.a}`;
   const cached = cache.get(key);
-  if (cached) return cached;
+  if (cached !== undefined) return cached ?? color;
 
   const { l, c, h } = rgbToOklch(color);
   const result =
     preserveDark && preserved(l, role)
-      ? color
+      ? null
       : { ...oklchToRgb({ l: mapLightness(l, role), c: c * CHROMA_SCALE[role], h }), a: color.a };
   if (cache.size > 4096) cache.clear();
   cache.set(key, result);
-  return result;
+  return result ?? color;
 }
