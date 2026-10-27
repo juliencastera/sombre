@@ -49,7 +49,9 @@ export class Scope {
     this.root = root;
     this.#context = context;
     this.#base = root instanceof Document ? context.store.create(context.baseRules()) : null;
-    this.#attributes = new AttributeStyles(context.store.create(), context.options, (rule) => (root instanceof Document ? context.store.wrap(rule) : rule));
+    this.#attributes = new AttributeStyles(context.store.create(), context.options, (rule) =>
+      root instanceof Document ? context.store.wrap(rule) : rule,
+    );
     this.#fixes = context.store.create();
   }
 

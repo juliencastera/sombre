@@ -7,8 +7,7 @@ import { fixTextColor, requiredLc } from '../../src/engine/contrast-math.ts';
 import { contrastTarget, setContrastLevel, transformColor } from '../../src/engine/transform.ts';
 
 const rgb = (value: string) => parseColor(value)!;
-const lc = (text: string | Rgb, bg: string) =>
-  Math.abs(apcaContrast(typeof text === 'string' ? rgb(text) : text, rgb(bg)));
+const lc = (text: string | Rgb, bg: string) => Math.abs(apcaContrast(typeof text === 'string' ? rgb(text) : text, rgb(bg)));
 
 afterEach(() => setContrastLevel('standard'));
 

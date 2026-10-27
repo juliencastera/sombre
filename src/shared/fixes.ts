@@ -69,7 +69,10 @@ export function validateSites(value: unknown): Record<string, Fix[]> {
   if (!value || typeof value !== 'object') return sites;
   for (const [key, list] of Object.entries(value as Record<string, unknown>).slice(0, MAX_SITES)) {
     if (!SITE_KEY.test(key) || !Array.isArray(list)) continue;
-    const fixes = list.slice(0, MAX_FIXES_PER_SITE).map(validateFix).filter((fix): fix is Fix => fix !== null);
+    const fixes = list
+      .slice(0, MAX_FIXES_PER_SITE)
+      .map(validateFix)
+      .filter((fix): fix is Fix => fix !== null);
     if (fixes.length) sites[key] = fixes;
   }
   return sites;

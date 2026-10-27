@@ -29,8 +29,7 @@ const canvas = () => formatColor(transformColor({ r: 255, g: 255, b: 255, a: 1 }
 const canvasText = () => formatColor(transformColor({ r: 0, g: 0, b: 0, a: 1 }, 'fg'));
 const border = () => formatColor(transformColor({ r: 221, g: 221, b: 221, a: 1 }, 'border'));
 /** Defaults for pages that style nothing; zero specificity so any mirrored page rule wins. */
-const baseRules = () =>
-  `:where(:root){background-color:${canvas()};color:${canvasText()}}:root{color-scheme:dark!important}`;
+const baseRules = () => `:where(:root){background-color:${canvas()};color:${canvasText()}}:root{color-scheme:dark!important}`;
 /** Shadow-root counterpart of the base layer's pre-ready guard (the base layer cannot pierce shadow roots). */
 const guardRules = () =>
   `*{background-color:${canvas()}!important;color:${canvasText()}!important;border-color:${border()}!important}`;
@@ -374,7 +373,8 @@ export class Engine {
       (event) => {
         // The page reassigned adoptedStyleSheets: put our mirrors back last.
         const target = origin(event);
-        const scope = target instanceof Element && target.shadowRoot ? this.#shadowScopes.get(target.shadowRoot) : this.#documentScope;
+        const scope =
+          target instanceof Element && target.shadowRoot ? this.#shadowScopes.get(target.shadowRoot) : this.#documentScope;
         if (scope) this.#schedule(scope);
       },
       true,

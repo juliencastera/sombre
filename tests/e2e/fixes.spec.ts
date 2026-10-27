@@ -44,9 +44,9 @@ test('"Invert" and "Force dark" apply at once', async ({ context, openPopup }) =
   await expect.poll(() => sombreState(page)).toBe('on');
 
   await pickFix(page, openPopup, 'h1', 'Invert');
-  await expect.poll(() => page.evaluate(() => getComputedStyle(document.querySelector('h1')!).filter)).toBe(
-    'invert(1) hue-rotate(180deg)',
-  );
+  await expect
+    .poll(() => page.evaluate(() => getComputedStyle(document.querySelector('h1')!).filter))
+    .toBe('invert(1) hue-rotate(180deg)');
 
   await pickFix(page, openPopup, 'pre', 'Force dark');
   await expect.poll(() => background(page, 'pre')).toBe('rgb(22, 22, 22)');
@@ -68,10 +68,15 @@ test('a fix can target an icon drawn by a pseudo-element', async ({ context, wor
 test('the shared list applies, unless turned off', async ({ context, worker, openOptions }) => {
   // Installed with the bundled, signed list.
   await expect
-    .poll(() => worker.evaluate(async () => (await chrome.storage.local.get('sombre:shared-fixes'))['sombre:shared-fixes']?.version))
+    .poll(() =>
+      worker.evaluate(async () => (await chrome.storage.local.get('sombre:shared-fixes'))['sombre:shared-fixes']?.version),
+    )
     .toBeGreaterThanOrEqual(1);
   await worker.evaluate(async () => {
-    const list = { version: 999, sites: { 'sombre-bench.dev': [{ selector: '.muted', action: 'set-color', property: 'color', value: '#ff0000' }] } };
+    const list = {
+      version: 999,
+      sites: { 'sombre-bench.dev': [{ selector: '.muted', action: 'set-color', property: 'color', value: '#ff0000' }] },
+    };
     await chrome.storage.local.set({ 'sombre:shared-fixes': list });
   });
   const page = await context.newPage();
@@ -106,7 +111,9 @@ test('the options page lists, exports, imports and removes fixes', async ({ open
   await expect(options.getByRole('status')).toHaveText('Imported 1 fixes.');
   await expect(list).toContainText('b.example');
 
-  await options.locator('input[type=file]').setInputFiles({ name: 'bad.json', mimeType: 'application/json', buffer: Buffer.from('{"nope":1}') });
+  await options
+    .locator('input[type=file]')
+    .setInputFiles({ name: 'bad.json', mimeType: 'application/json', buffer: Buffer.from('{"nope":1}') });
   await expect(options.getByRole('status')).toHaveText('This file is not a valid fix list.');
 
   await list.getByRole('listitem').filter({ hasText: 'a.example' }).getByRole('button', { name: 'Remove' }).click();

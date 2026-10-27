@@ -23,10 +23,25 @@ async function ensureCertificate(): Promise<{ key: Buffer; cert: Buffer }> {
   );
   if (!present) {
     await mkdir(PATHS.tls, { recursive: true });
-    execFileSync('openssl', [
-      'req', '-x509', '-newkey', 'rsa:2048', '-nodes',
-      '-keyout', key, '-out', cert, '-days', '3650', '-subj', '/CN=sombre-bench',
-    ], { stdio: 'ignore' });
+    execFileSync(
+      'openssl',
+      [
+        'req',
+        '-x509',
+        '-newkey',
+        'rsa:2048',
+        '-nodes',
+        '-keyout',
+        key,
+        '-out',
+        cert,
+        '-days',
+        '3650',
+        '-subj',
+        '/CN=sombre-bench',
+      ],
+      { stdio: 'ignore' },
+    );
   }
   return { key: await readFile(key), cert: await readFile(cert) };
 }
@@ -68,10 +83,7 @@ export async function startFixtureServers(): Promise<() => Promise<void>> {
   const tls = await ensureCertificate();
   const site = path.join(PATHS.fixtures, 'site');
   const cdn = path.join(PATHS.fixtures, 'cdn');
-  const servers = await Promise.all([
-    serve([site], FIXTURE_PORTS.site, tls),
-    serve([cdn, site], FIXTURE_PORTS.cdn, tls),
-  ]);
+  const servers = await Promise.all([serve([site], FIXTURE_PORTS.site, tls), serve([cdn, site], FIXTURE_PORTS.cdn, tls)]);
   return async () => {
     await Promise.all(servers.map((server) => new Promise((resolve) => server.close(resolve))));
   };

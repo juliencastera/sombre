@@ -26,7 +26,13 @@ const FIXTURE_ARGS = [
  * caches and a freshly installed extension. Extensions require a persistent
  * context, and the `chromium` channel keeps them working in headless mode.
  */
-export function launchContext({ extensionPath, headed, scheme, reducedMotion = false, lang }: LaunchOptions): Promise<BrowserContext> {
+export function launchContext({
+  extensionPath,
+  headed,
+  scheme,
+  reducedMotion = false,
+  lang,
+}: LaunchOptions): Promise<BrowserContext> {
   return chromium.launchPersistentContext('', {
     channel: 'chromium',
     headless: !headed,

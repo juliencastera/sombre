@@ -17,7 +17,10 @@ function parseHex(hex: string): Rgba | null {
 /** Split `rgb()`/`hsl()` arguments, legacy comma or modern space/slash syntax. */
 function args(inner: string): string[] | null {
   if (/\bfrom\b|calc\(|var\(/i.test(inner)) return null; // relative colors / math: let the browser resolve
-  const parts = inner.trim().split(/\s*[,/]\s*|\s+/).filter(Boolean);
+  const parts = inner
+    .trim()
+    .split(/\s*[,/]\s*|\s+/)
+    .filter(Boolean);
   return parts.length === 3 || parts.length === 4 ? parts : null;
 }
 

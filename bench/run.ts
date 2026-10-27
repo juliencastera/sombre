@@ -213,7 +213,8 @@ async function main(): Promise<void> {
           };
         }
         results.push(result);
-        const detail = result.status === 'ok' ? `${((result.durationMs ?? 0) / 1000).toFixed(1)}s, ${result.network}` : result.reason;
+        const detail =
+          result.status === 'ok' ? `${((result.durationMs ?? 0) / 1000).toFixed(1)}s, ${result.network}` : result.reason;
         console.log(`${label} → ${result.status} (${detail})`);
       }
     }

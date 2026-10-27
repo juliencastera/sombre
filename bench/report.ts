@@ -61,7 +61,7 @@ function headToHead(report: RunReport, metric: Metric) {
     const vb = b?.status === 'ok' ? metric.value(b) : null;
     if (va == null || vb == null) continue;
     if (va === vb) tally.equal++;
-    else if ((va < vb) === (metric.better === 'lower')) tally.better++;
+    else if (va < vb === (metric.better === 'lower')) tally.better++;
     else tally.worse++;
   }
   return tally;
@@ -91,7 +91,11 @@ function markdown(report: RunReport): string {
     '',
     `- Started: ${meta.startedAt}`,
     `- Browser: ${meta.browser ?? 'unknown'} · OS scheme: ${meta.scheme} · Network: ${meta.harMode}`,
-    `- Versions: ${Object.entries(meta.versions).map(([id, v]) => `${id} ${v}`).join(', ') || 'n/a'}`,
+    `- Versions: ${
+      Object.entries(meta.versions)
+        .map(([id, v]) => `${id} ${v}`)
+        .join(', ') || 'n/a'
+    }`,
     '',
   ];
   for (const metric of METRICS) {
@@ -178,9 +182,19 @@ function html(report: RunReport): string {
 </style></head><body>
 <h1>Sombre benchmark</h1>
 <p class="meta">${escapeHtml(meta.startedAt)} · ${escapeHtml(meta.browser ?? 'unknown browser')} · OS scheme ${meta.scheme} · network ${meta.harMode}
- · ${escapeHtml(Object.entries(meta.versions).map(([id, v]) => `${id} ${v}`).join(', '))}</p>
+ · ${escapeHtml(
+   Object.entries(meta.versions)
+     .map(([id, v]) => `${id} ${v}`)
+     .join(', '),
+ )}</p>
 ${tables}
-${nativeSummary(report).length ? `<h2>Native dark themes detected</h2><ul>${nativeSummary(report).map((line) => `<li>${escapeHtml(line)}</li>`).join('')}</ul>` : ''}
+${
+  nativeSummary(report).length
+    ? `<h2>Native dark themes detected</h2><ul>${nativeSummary(report)
+        .map((line) => `<li>${escapeHtml(line)}</li>`)
+        .join('')}</ul>`
+    : ''
+}
 <h2>Screenshots after second visit</h2>
 ${shots}
 </body></html>`;

@@ -48,7 +48,10 @@ export interface Effective {
 }
 
 export function siteKey(hostname: string): string {
-  return hostname.toLowerCase().replace(/^www\./, '').replace(/\.$/, '');
+  return hostname
+    .toLowerCase()
+    .replace(/^www\./, '')
+    .replace(/\.$/, '');
 }
 
 /** The most specific site key in `keys` covering `hostname` (exact host or a parent domain). */

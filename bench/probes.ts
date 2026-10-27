@@ -37,7 +37,10 @@ export function collectTextSamples(maxSamples: number): TextSample[] {
     let result: RgbaTuple;
     const match = /^rgba?\(([^)]+)\)$/.exec(value);
     if (match) {
-      const parts = match[1]!.split(/[\s,/]+/).filter(Boolean).map(parseFloat);
+      const parts = match[1]!
+        .split(/[\s,/]+/)
+        .filter(Boolean)
+        .map(parseFloat);
       result = [parts[0]!, parts[1]!, parts[2]!, parts[3] ?? 1];
     } else {
       // Any other color syntax (oklch(), color(), system colors): let the canvas resolve it.

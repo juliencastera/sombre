@@ -10,7 +10,9 @@ const computed = (page: Page, selector: string, property: 'color' | 'backgroundC
   page.evaluate(([s, p]) => getComputedStyle(document.querySelector(s!)!)[p as 'color'], [selector, property]);
 
 const lc = async (page: Page, text: string, row: string) =>
-  Math.abs(apcaContrast(parseColor(await computed(page, text, 'color'))!, parseColor(await computed(page, row, 'backgroundColor'))!));
+  Math.abs(
+    apcaContrast(parseColor(await computed(page, text, 'color'))!, parseColor(await computed(page, row, 'backgroundColor'))!),
+  );
 
 test('a mail list stays readable at the Soft level', async ({ context, openPopup, settings }) => {
   const page = await context.newPage();

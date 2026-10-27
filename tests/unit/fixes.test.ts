@@ -37,7 +37,13 @@ describe('validateFixList', () => {
     expect(
       validateFixList({
         version: 3,
-        sites: { 'a.com': [{ selector: '.x', action: 'invert' }, { selector: '.y', action: 'nope' }], 'B C': [] },
+        sites: {
+          'a.com': [
+            { selector: '.x', action: 'invert' },
+            { selector: '.y', action: 'nope' },
+          ],
+          'B C': [],
+        },
       }),
     ).toEqual({ version: 3, sites: { 'a.com': [{ selector: '.x', action: 'invert' }] } });
   });
@@ -50,8 +56,15 @@ describe('validateFixList', () => {
 
 describe('fixesFor', () => {
   it('collects fixes of the host and its parent domains', () => {
-    const sites = { 'a.com': [{ selector: '.x', action: 'invert' as const }], 'docs.a.com': [{ selector: '.y', action: 'ignore' as const }] };
-    expect(fixesFor(sites, 'www.docs.a.com').map((fix) => fix.selector).sort()).toEqual(['.x', '.y']);
+    const sites = {
+      'a.com': [{ selector: '.x', action: 'invert' as const }],
+      'docs.a.com': [{ selector: '.y', action: 'ignore' as const }],
+    };
+    expect(
+      fixesFor(sites, 'www.docs.a.com')
+        .map((fix) => fix.selector)
+        .sort(),
+    ).toEqual(['.x', '.y']);
     expect(fixesFor(sites, 'b.com')).toEqual([]);
   });
 });

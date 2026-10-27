@@ -42,7 +42,13 @@ export default defineUnlistedScript(() => {
 
   const outline = (el: Element) => {
     const r = el.getBoundingClientRect();
-    Object.assign(box.style, { display: 'block', left: `${r.left}px`, top: `${r.top}px`, width: `${r.width}px`, height: `${r.height}px` });
+    Object.assign(box.style, {
+      display: 'block',
+      left: `${r.left}px`,
+      top: `${r.top}px`,
+      width: `${r.width}px`,
+      height: `${r.height}px`,
+    });
   };
 
   const inUi = (event: Event) => event.composedPath().includes(host);

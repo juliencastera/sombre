@@ -91,7 +91,9 @@ export class AttributeStyles {
       const color = parseLegacyColor(value.trim());
       if (!color) continue;
       // :where(): like the hint it replaces, any page CSS rule still wins.
-      this.#add(`:where(${tag}[${attribute}=${JSON.stringify(value)} i]){${property}:${formatColor(transformColor(color, role))}}`);
+      this.#add(
+        `:where(${tag}[${attribute}=${JSON.stringify(value)} i]){${property}:${formatColor(transformColor(color, role))}}`,
+      );
     }
   }
 

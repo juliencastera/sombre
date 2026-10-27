@@ -132,7 +132,7 @@ function rewrite(s: string, role: Role, options: RewriteOptions): Result {
     return formatColor(transformed);
   };
 
-  for (let i = 0; i < s.length; ) {
+  for (let i = 0; i < s.length;) {
     const ch = s[i]!;
 
     if (ch === '"' || ch === "'") {
@@ -195,7 +195,8 @@ function rewrite(s: string, role: Role, options: RewriteOptions): Result {
           i = close + 1;
           continue;
         }
-        const named = /^[a-z]+$/i.test(ident) && !NOT_NAMED_COLORS.has(ident.toLowerCase()) ? options.resolveColor?.(ident) : null;
+        const named =
+          /^[a-z]+$/i.test(ident) && !NOT_NAMED_COLORS.has(ident.toLowerCase()) ? options.resolveColor?.(ident) : null;
         out += named ? color(named, ident) : ident;
         i += ident.length;
         continue;

@@ -383,7 +383,11 @@
     border: 1px solid var(--border);
     border-radius: 6px;
     background: var(--surface-2);
-    font: 12px/1.4 ui-monospace, SFMono-Regular, Consolas, monospace;
+    font:
+      12px/1.4 ui-monospace,
+      SFMono-Regular,
+      Consolas,
+      monospace;
   }
 
   .list {
@@ -414,7 +418,11 @@
   code {
     margin-left: 6px;
     color: var(--text-2);
-    font: 12px ui-monospace, SFMono-Regular, Consolas, monospace;
+    font:
+      12px ui-monospace,
+      SFMono-Regular,
+      Consolas,
+      monospace;
   }
 
   .link-button:disabled {

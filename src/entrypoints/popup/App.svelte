@@ -159,10 +159,7 @@
     <footer>
       <label>
         {t('defaultMode')}
-        <select
-          value={settings.mode}
-          onchange={(event) => void save({ ...settings, mode: event.currentTarget.value as Mode })}
-        >
+        <select value={settings.mode} onchange={(event) => void save({ ...settings, mode: event.currentTarget.value as Mode })}>
           <option value="auto">{t('modeAuto')}</option>
           <option value="dark">{t('modeDark')}</option>
           <option value="light">{t('modeLight')}</option>
