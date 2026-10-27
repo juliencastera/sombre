@@ -1,4 +1,9 @@
 {
-  "version": 1,
-  "sites": {}
+  "version": 2,
+  "sites": {
+    "mail.google.com": [
+      { "selector": "img[src*=\"logo_gmail_lockup_default\"]", "action": "invert" },
+      { "selector": ".T-I-KE::before", "action": "invert" }
+    ]
+  }
 }
