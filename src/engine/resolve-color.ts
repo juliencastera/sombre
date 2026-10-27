@@ -10,6 +10,8 @@ const cache = new Map<string, Rgba | null>();
  * (relative colors with var(), currentcolor) resolve to null.
  */
 export function resolveColorInBrowser(text: string): Rgba | null {
+  // A canvas has no element to inherit from: it resolves currentcolor to black.
+  if (/^\s*currentcolor\s*$/i.test(text)) return null;
   const cached = cache.get(text);
   if (cached !== undefined) return cached;
 
