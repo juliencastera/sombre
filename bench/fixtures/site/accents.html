@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Fixture — accents and icons</title>
+    <link rel="stylesheet" href="common.css" />
+    <!-- Colored bars and buttons whose color is the content (Fragrantica accords), and SVG icons drawn with fill="currentColor" (GitHub octicons). -->
+    <style>
+      .accords {
+        width: 320px;
+      }
+      .accords div {
+        color: #ffffff;
+        font-size: 14px;
+        font-weight: 500;
+        text-align: center;
+        padding: 4px 0;
+      }
+      .button {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 5px 12px;
+        font-size: 14px;
+        border: 1px solid #d1d9e0;
+        border-radius: 6px;
+        background: #f6f8fa;
+        color: #25292e;
+      }
+      .button.primary {
+        background: #1f883d;
+        border-color: #1f883d;
+        color: #ffffff;
+        font-weight: 500;
+      }
+      .heart {
+        color: #bf3989;
+      }
+      .folder {
+        color: #54aeff;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="accords">
+        <div class="accord" style="background: rgb(204, 51, 0); width: 100%">spicy</div>
+        <div class="accord" style="background: rgb(255, 105, 180); width: 80%">rose</div>
+      </div>
+      <p>
+        <button class="button"><svg class="heart" width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="8" r="7" /></svg>Sponsor</button>
+        <button class="button primary"><svg class="code-icon" width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="2" y="2" width="12" height="12" /></svg><span class="label">Code</span></button>
+      </p>
+      <p><svg class="folder" width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="3" width="14" height="10" /></svg> docs</p>
+    </main>
+  </body>
+</html>

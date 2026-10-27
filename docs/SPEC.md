@@ -98,6 +98,18 @@ The popup states this and offers "Use Sombre's engine instead" (the site's Dark 
   mid-grey text maps into a compressed light band calibrated with APCA against the page
   background (Standard: #1f1f1f → Lc 89, #5f6368 → Lc 78; Soft: 81 and 68); light text on
   colored surfaces stays light.
+- **Accents, tints, overlays** (revised after Fragrantica and GitHub):
+  - Vivid fills and borders (OKLCH chroma ≥ 0.06, lightness ≤ 0.88: badges, bars, colored
+    buttons) keep their hue and 90 % of their chroma, lightness capped at 0.6 so white text
+    on them stays around Lc 70–76. Darkening them like surfaces made near-black browns.
+  - Pastel tints (lighter than 0.88) are darkened like surfaces, with up to twice their
+    chroma (max 0.05) so a mint or blue-grey panel stays visibly tinted.
+  - Faint neutral overlays (opacity ≤ 0.16: hover tints, glassy buttons, hairlines) become
+    white at the same opacity; on a site's own dark theme they are left alone.
+  - A contrast fix never lowers contrast: when neither white nor black text reaches the
+    floor (white on a mid-tone button), the better extreme is used, or the text is left.
+  - `fill="currentColor"` and other `currentColor` values are never resolved to a fixed
+    color (a canvas resolves them to black): icons keep following their element's color.
 - Implementation: in-house OKLCH + APCA (~200 LOC), no color library in the content script.
 - CSS parsing: native parser (`new CSSStyleSheet().replaceSync(text)` → walk `cssRules`).
 

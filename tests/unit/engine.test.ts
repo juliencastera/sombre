@@ -69,6 +69,36 @@ describe('transformColor', () => {
     expect(L('#222222', 'bg')).toBeLessThan(PAGE_BG_L);
   });
 
+  it('keeps vivid fills and borders vivid, light enough to stand out', () => {
+    const C = (value: string, role: 'bg' | 'border') => rgbToOklch(transformColor(rgba(value), role)).c;
+    // Accord bars and rating bars (Fragrantica): orange-red, deep red, coral.
+    for (const value of ['#cc3300', '#ac2005', '#ff766f', '#3b82f6']) {
+      expect(L(value, 'bg')).toBeGreaterThan(0.45);
+      expect(L(value, 'bg')).toBeLessThanOrEqual(0.6 + 1e-3);
+      expect(C(value, 'bg')).toBeGreaterThan(rgbToOklch(rgba(value)).c * 0.85);
+    }
+    expect(L('#14b8a6', 'border')).toBeGreaterThan(0.55);
+    // White text on them stays readable.
+    expect(Math.abs(apcaContrast(rgba('#ffffff'), transformColor(rgba('#ff9900'), 'bg')))).toBeGreaterThan(70);
+  });
+
+  it('turns faint neutral overlays into light overlays', () => {
+    // GitHub's glassy "Sign up" button, and a typical hover tint.
+    expect(transformColor(rgba('rgba(255, 255, 255, 0.12)'), 'bg')).toEqual({ r: 255, g: 255, b: 255, a: 0.12 });
+    expect(transformColor(rgba('rgba(0, 0, 0, 0.05)'), 'bg')).toEqual({ r: 255, g: 255, b: 255, a: 0.05 });
+    expect(transformColor(rgba('rgba(0, 0, 0, 0.06)'), 'border')).toEqual({ r: 255, g: 255, b: 255, a: 0.06 });
+    // Modal backdrops stay dark.
+    expect(L('rgba(0, 0, 0, 0.5)', 'bg')).toBeLessThan(PAGE_BG_L);
+  });
+
+  it('darkens pastel tints like surfaces, keeping the tint visible', () => {
+    expect(L('#fef08a', 'bg')).toBeLessThan(0.35);
+    const mint = rgbToOklch(transformColor(rgba('#ecfdf5'), 'bg'));
+    expect(mint.l).toBeLessThan(0.25);
+    expect(mint.c).toBeGreaterThan(0.025);
+    expect(rgbToOklch(transformColor(rgba('#f4f4f5'), 'bg')).c).toBeLessThan(0.01);
+  });
+
   it('inverts dark text and keeps light text light', () => {
     expect(L('#000000', 'fg')).toBeGreaterThan(0.9);
     expect(L('#ffffff', 'fg')).toBeCloseTo(1, 2);

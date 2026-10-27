@@ -89,8 +89,50 @@ function mapLightness(l: number, role: Role): number {
   }
 }
 
+/** OKLCH chroma from which a fill or border reads as a color (badge, button, bar) rather than a tinted surface. */
+const ACCENT_MIN_CHROMA = 0.06;
+/** Accents above this lightness are pastel tints, darkened like surfaces. */
+const ACCENT_PASTEL_L = 0.88;
+/** Accents are kept vivid, at most this light: white text on them stays around Lc 70–76. */
+const ACCENT_MAX_L = 0.6;
+
+/**
+ * Vivid fills and borders (accord bars, badges, colored and outlined buttons,
+ * rating bars) carry meaning through their color: darkening them like page
+ * surfaces turns them into near-black browns and maroons. They keep their hue
+ * and most of their chroma, capped in lightness so the text on them stays readable.
+ */
+function isAccent(l: number, c: number, role: Role): boolean {
+  const surface = role === 'bg' || role === 'border' || (role === 'invert' && l >= 0.5);
+  return surface && c >= ACCENT_MIN_CHROMA && l <= ACCENT_PASTEL_L;
+}
+
+/** Most opacity of a neutral fill or border still read as an overlay rather than a surface. */
+const OVERLAY_MAX_ALPHA = 0.16;
+
+/**
+ * Faint neutral overlays (hover tints, glassy buttons, hairlines) shade
+ * whatever is below them. On a dark page they must lighten to show, so they
+ * become white at the same opacity; on a site's own dark theme they are left alone.
+ */
+function isOverlay(alpha: number, c: number, role: Role): boolean {
+  return (role === 'bg' || role === 'border') && alpha > 0 && alpha <= OVERLAY_MAX_ALPHA && c < 0.02;
+}
+
 /** Saturated colors look louder on dark backgrounds; tone chroma down a little. */
 const CHROMA_SCALE: Record<Role, number> = { bg: 0.8, fg: 0.95, border: 0.8, shadow: 1, invert: 0.9 };
+/** Most chroma a light tint gets once darkened. */
+const TINT_MAX_CHROMA = 0.05;
+
+/**
+ * A faint tint (mint panel, blue-grey row) shows on a white page but vanishes
+ * at the lightness of a dark surface: light surfaces get twice their chroma, up
+ * to a visible but quiet tint. Everything else is toned down a little.
+ */
+function mapChroma(l: number, c: number, role: Role): number {
+  const lightSurface = l >= 0.5 && (role === 'bg' || role === 'border' || role === 'invert');
+  return lightSurface ? Math.min(c * 2, Math.max(TINT_MAX_CHROMA, c * CHROMA_SCALE[role])) : c * CHROMA_SCALE[role];
+}
 
 /** Cached results; `null` means the color is left as is (callers get their own object back). */
 const cache = new Map<string, Rgba | null>();
@@ -100,12 +142,18 @@ export function transformColor(color: Rgba, role: Role): Rgba {
   const cached = cache.get(key);
   if (cached !== undefined) return cached ?? color;
 
-  const { l, c, h } = rgbToOklch(color);
-  const result =
-    preserveDark && preserved(l, role)
-      ? null
-      : { ...oklchToRgb({ l: mapLightness(l, role), c: c * CHROMA_SCALE[role], h }), a: color.a };
+  const result = transform(color, role);
   if (cache.size > 4096) cache.clear();
   cache.set(key, result);
   return result ?? color;
+}
+
+/** The dark counterpart of `color`, or null to leave it as is. */
+function transform(color: Rgba, role: Role): Rgba | null {
+  const { l, c, h } = rgbToOklch(color);
+  const overlay = isOverlay(color.a, c, role);
+  if (preserveDark && (overlay || preserved(l, role))) return null;
+  if (overlay) return { r: 255, g: 255, b: 255, a: color.a };
+  if (isAccent(l, c, role)) return { ...oklchToRgb({ l: Math.min(l, ACCENT_MAX_L), c: c * 0.9, h }), a: color.a };
+  return { ...oklchToRgb({ l: mapLightness(l, role), c: mapChroma(l, c, role), h }), a: color.a };
 }
