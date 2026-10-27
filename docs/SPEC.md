@@ -251,8 +251,8 @@ As built in M6:
 - Bundled and remote lists share one format (`fixes/fixes.json`, signed into
   `fixes/fixes.signed.json` and `public/fixes.signed.json` by `npm run fixes:sign`); the
   background keeps the newest valid version. The remote URL and the repository for
-  "Report this site" are build-time settings (`WXT_FIXES_URL`, `WXT_REPO_URL`); unset, the
-  remote refresh and the report link are off.
+  "Report this site" are build-time settings (`WXT_FIXES_URL`, `WXT_REPO_URL`), defaulting to
+  github.com/juliencastera/sombre; set empty, the remote refresh and the report link are off.
 - The private signing key lives outside the repository (default `~/.sombre/fixes-ed25519.pem`,
   created once by `npm run fixes:keygen`).
 
