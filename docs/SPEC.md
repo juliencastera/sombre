@@ -40,13 +40,25 @@ between navigations.
 3. **Per-domain cache** — generated CSS stored and replayed on next visit (see §5).
 
 **Native dark mode first:** if the site ships its own dark theme
-(`prefers-color-scheme` media rules, `.dark` / `data-theme` conventions), activate it
-and do not run the engine. The popup states this and offers "Use Sombre's engine instead".
-M1 detects it by reading the page's own colors with Sombre disabled (synchronously, no
-frame painted): the canvas (root/body background, propagated) must be dark and ≥ 85 % of a
-3×3 viewport grid must sit on dark backgrounds — a dark hero over white sections is not a
-dark theme. Re-checked at `load` for sites that switch theme from script. Verdicts are
-stored per site and excluded from the base layer registration.
+(`prefers-color-scheme` media rules, `.dark` / `data-theme` conventions), activate it.
+The popup states this and offers "Use Sombre's engine instead" (the site's Dark state).
+- *Detection* reads the page's own colors with Sombre disabled (synchronously, no frame
+  painted): the canvas (root/body background, propagated) must be dark and ≥ 85 % of a
+  3×3 viewport grid must sit on dark backgrounds — a dark hero over white sections is not
+  a dark theme.
+- *Activation (M3):* when the page is not dark by itself, the most used theme switches
+  found in its stylesheets (`html.dark`, `html[dark]`, `[data-theme="dark"]`,
+  `[data-color-mode="dark"]`… on `html`/`body`) are tried in turn; the first that makes the
+  page dark is kept and remembered per site, then re-applied at document start.
+- *Preserve mode (M3, revised):* the engine still runs on native sites, with a transform
+  that leaves already-dark backgrounds/borders/shadows and light text/icons exactly as
+  designed — only light leftovers (consent walls, third-party widgets) are darkened, and
+  the contrast passes still apply. A native theme with a white consent wall is otherwise a
+  white flash.
+- Re-checked at `load`: a light page that turned dark switches to preserve mode; a native
+  page whose canvas is light again (the site reset our switch) switches back. Overlays do
+  not count for the second check: only the canvas does.
+- Verdicts are stored per site and excluded from the base layer registration.
 
 ---
 
@@ -60,7 +72,12 @@ stored per site and excluded from the base layer registration.
      adjust the pair together to reach the threshold.
   2. *DOM-level (visible only):* `IntersectionObserver` on visible text nodes,
      resolve effective background through ancestors, fix nodes below threshold.
-     Budgeted via `requestIdleCallback` + per-frame ms budget.
+     Runs in `requestIdleCallback`. A fixed element gets `data-sombre-fix="<hex>"`, styled
+     by one `!important` rule per color — the only attribute Sombre writes on page
+     elements. Fixes are removed, re-measured and re-applied in the same task, so no
+     frame shows an unfixed color. Backgrounds behind images, gradients, filters or
+     blend modes are not judged.
+  Floors: body text at the level's target, large text (≥ 24px, or ≥ 18.66px bold) 15 less.
 - **User setting:** contrast level, global only (no per-site override in v1):
 
   | Level | APCA target |
