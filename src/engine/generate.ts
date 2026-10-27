@@ -1,4 +1,7 @@
-import { ROLES, type Role } from './transform.ts';
+import { formatColor, parseColor } from '../shared/color/parse.ts';
+import type { Rgba } from '../shared/color/types.ts';
+import { fixTextColor } from './contrast-math.ts';
+import { contrastTarget, ROLES, type Role } from './transform.ts';
 import { channelTwins, rewriteValue, roleVariable, type RewriteOptions } from './value.ts';
 
 export interface GenerateOptions extends RewriteOptions {
@@ -64,6 +67,8 @@ const VAR_SHORTHANDS: [string, Role][] = [
 export function declarations(style: CSSStyleDeclaration, options: GenerateOptions, forceImportant = false): string {
   let out = '';
   let pendingShorthand = false;
+  let text: { rewritten: string; important: string } | null = null;
+  let background: Rgba | null = null;
   for (let i = 0; i < style.length; i++) {
     const property = style[i]!;
     const value = style.getPropertyValue(property);
@@ -86,7 +91,24 @@ export function declarations(style: CSSStyleDeclaration, options: GenerateOption
     }
     if (property === 'background-image' && !value.includes('gradient') && !value.includes('var(')) continue;
     const rewritten = rewriteValue(value, role, options);
-    if (rewritten !== null) out += `${property}:${rewritten}${important};`;
+    if (rewritten === null) continue;
+    if (property === 'color') {
+      // Emitted last, once the rule's own background is known (rule-level contrast pass).
+      text = { rewritten, important };
+      continue;
+    }
+    if (property === 'background-color') background = parseColor(rewritten);
+    out += `${property}:${rewritten}${important};`;
+  }
+
+  if (text) {
+    let color = text.rewritten;
+    const parsed = parseColor(color);
+    if (parsed && parsed.a === 1 && background?.a === 1) {
+      const fixed = fixTextColor(parsed, background, contrastTarget());
+      if (fixed) color = formatColor({ ...fixed, a: 1 });
+    }
+    out += `color:${color}${text.important};`;
   }
 
   if (pendingShorthand) {
