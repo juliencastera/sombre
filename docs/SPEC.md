@@ -218,6 +218,23 @@ remote fix list toggle.
 
 Sources, in priority order: **user local fixes** > **remote signed list** > **bundled list**.
 
+As built in M6:
+- No free CSS anywhere, local fixes included: every fix is a selector plus one of
+  `ignore`, `invert`, `force-dark`, `set-color` (hex value, color properties only).
+  The picker covers the cases free CSS was meant for, and one validator serves all sources.
+- `ignore` ("Keep original") wraps every document mirror in `@scope (:root) to (<selectors>)`:
+  the lower boundary excludes the elements and their content. The explicit `(:root)` matters:
+  without a scope start, Chrome finds no scoping root for adopted sheets and the rules
+  match nothing. Shadow-tree mirrors are left unwrapped.
+- Elements with a fix are skipped by the DOM contrast pass: an explicit choice wins.
+- Bundled and remote lists share one format (`fixes/fixes.json`, signed into
+  `fixes/fixes.signed.json` and `public/fixes.signed.json` by `npm run fixes:sign`); the
+  background keeps the newest valid version. The remote URL and the repository for
+  "Report this site" are build-time settings (`WXT_FIXES_URL`, `WXT_REPO_URL`); unset, the
+  remote refresh and the report link are off.
+- The private signing key lives outside the repository (default `~/.sombre/fixes-ed25519.pem`,
+  created once by `npm run fixes:keygen`).
+
 - **Element picker** (popup → hover outline → click) with 3 actions:
   `ignore` (keep original), `invert` (e.g. black logo on transparent), `force-dark`.
   Saved locally per domain, applied immediately.
@@ -255,7 +272,7 @@ Sources, in priority order: **user local fixes** > **remote signed list** > **bu
 | Manifest | MV3 |
 | Language | TypeScript (strict) |
 | Extension framework / build | WXT (Vite) |
-| Content script | Vanilla TS, zero dependencies, built as a WXT unlisted script declared in the manifest (no WXT content script runtime). Budget revised to < 32 KB minified in M4 (31.5 KB with contrast passes, native themes and cache); Chrome code-caches extension scripts, so the remaining cost is negligible |
+| Content script | Vanilla TS, zero dependencies, built as a WXT unlisted script declared in the manifest (no WXT content script runtime). Budget < 34 KB minified, enforced by an E2E test (33.3 KB in M6; revised from 30 KB as contrast passes, native themes, cache and fixes landed). Chrome code-caches extension scripts, so the remaining cost is negligible. The element picker is a separate script injected on demand |
 | Popup / options | Svelte 5 |
 | Unit tests | Vitest (color math, APCA, rule rewriting) |
 | E2E / benchmark | Playwright with extension loaded |
