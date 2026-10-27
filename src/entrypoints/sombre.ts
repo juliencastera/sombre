@@ -176,8 +176,8 @@ export default defineUnlistedScript(async () => {
   if (isTop) {
     const save = () =>
       requestIdleCallback(
-        () => {
-          const sheets = engine.cachedSheets();
+        async () => {
+          const sheets = await engine.cachedSheets();
           const version = cacheVersion(buildVersion, settings.contrast, engine.native);
           if (Object.keys(sheets).length) void writeCache(key, version, sheets, cached);
         },

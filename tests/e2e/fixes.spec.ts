@@ -114,5 +114,5 @@ test('the options page lists, exports, imports and removes fixes', async ({ open
 });
 
 test('the engine content script stays within its size budget', () => {
-  expect(statSync(path.join(PATHS.sombre, 'sombre.js')).size).toBeLessThan(34 * 1024);
+  expect(statSync(path.join(PATHS.sombre, 'sombre.js')).size).toBeLessThan(37 * 1024);
 });

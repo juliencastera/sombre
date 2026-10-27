@@ -1,5 +1,5 @@
 import { browser } from 'wxt/browser';
-import type { FetchCssRequest, FetchCssResponse } from '../shared/messages.ts';
+import type { FetchCssRequest, FetchResponse } from '../shared/messages.ts';
 import { generateRules, type GenerateOptions } from './generate.ts';
 
 const MAX_IMPORT_DEPTH = 4;
@@ -13,7 +13,7 @@ async function fetchText(url: string): Promise<string> {
     return response.text();
   }
   const request: FetchCssRequest = { type: 'sombre:fetch-css', url };
-  const response: FetchCssResponse = await browser.runtime.sendMessage(request);
+  const response: FetchResponse = await browser.runtime.sendMessage(request);
   if (!response?.ok) throw new Error(response?.error ?? 'no response');
   return response.text;
 }

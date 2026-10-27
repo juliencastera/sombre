@@ -7,6 +7,23 @@ import { channelTwins, rewriteValue, roleVariable, type RewriteOptions } from '.
 export interface GenerateOptions extends RewriteOptions {
   /** Generated CSS for an `@import`ed sheet the page cannot read (cross-origin), or null if not loaded yet. */
   resolveImport?: (url: string) => string | null;
+  /** Custom property standing for the dark version of a background image (see DarkIcons), or null to leave it. */
+  icon?: (url: string) => string | null;
+}
+
+/** A background image that is a single `url()`, with its URL. */
+const SINGLE_URL = /^url\(\s*(['"]?)(.*?)\1\s*\)$/s;
+
+/** The absolute URL of a background image, or null when it is not a single `url()`. */
+function imageUrl(value: string, baseUrl: string | null | undefined): string | null {
+  const url = SINGLE_URL.exec(value.trim())?.[2];
+  if (!url) return null;
+  if (url.startsWith('data:')) return url;
+  try {
+    return new URL(url, baseUrl ?? document.baseURI).href;
+  } catch {
+    return null;
+  }
 }
 
 const ROLE_BY_PROPERTY: Record<string, Role> = {
@@ -69,6 +86,8 @@ export function declarations(style: CSSStyleDeclaration, options: GenerateOption
   let pendingShorthand = false;
   let text: { rewritten: string; important: string } | null = null;
   let background: Rgba | null = null;
+  // A masked element's background color is the ink of an icon, not a surface.
+  const masked = style.getPropertyValue('mask-image').includes('url(');
   for (let i = 0; i < style.length; i++) {
     const property = style[i]!;
     const value = style.getPropertyValue(property);
@@ -83,13 +102,18 @@ export function declarations(style: CSSStyleDeclaration, options: GenerateOption
       continue;
     }
 
-    const role = ROLE_BY_PROPERTY[property];
+    const role = masked && property === 'background-color' ? 'fg' : ROLE_BY_PROPERTY[property];
     if (!role) continue;
     if (!value) {
       pendingShorthand = true;
       continue;
     }
-    if (property === 'background-image' && !value.includes('gradient') && !value.includes('var(')) continue;
+    if (property === 'background-image' && !value.includes('gradient') && !value.includes('var(')) {
+      const url = options.icon && imageUrl(value, options.baseUrl);
+      const variable = url && options.icon!(url);
+      if (variable) out += `background-image:var(${variable},url(${JSON.stringify(url)}))${important};`;
+      continue;
+    }
     const rewritten = rewriteValue(value, role, options);
     if (rewritten === null) continue;
     if (property === 'color') {
@@ -97,7 +121,7 @@ export function declarations(style: CSSStyleDeclaration, options: GenerateOption
       text = { rewritten, important };
       continue;
     }
-    if (property === 'background-color') background = parseColor(rewritten);
+    if (property === 'background-color' && !masked) background = parseColor(rewritten);
     out += `${property}:${rewritten}${important};`;
   }
 

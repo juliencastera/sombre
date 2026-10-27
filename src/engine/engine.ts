@@ -3,6 +3,7 @@ import type { Fix } from '../shared/fixes.ts';
 import type { ContrastLevel, NativeMarker } from '../shared/settings.ts';
 import { ContrastPass } from './contrast.ts';
 import type { GenerateOptions } from './generate.ts';
+import { DarkIcons, ICON_CACHE_PREFIX } from './icons.ts';
 import { MirrorStore } from './mirrors.ts';
 import { applyMarker, findNativeMarkers, pageLooksDark } from './native.ts';
 import { resolveColorInBrowser } from './resolve-color.ts';
@@ -96,6 +97,7 @@ export class Engine {
   native = false;
 
   readonly #store: MirrorStore;
+  readonly #icons: DarkIcons;
   readonly #guard = new CSSStyleSheet();
   readonly #context: ScopeContext;
   readonly #documentScope: Scope;
@@ -123,8 +125,9 @@ export class Engine {
   constructor(osDark: () => boolean, onNative: (marker: NativeMarker | null) => void) {
     this.#osDark = osDark;
     this.#onNative = onNative;
-    const options: GenerateOptions = { resolveColor: resolveColorInBrowser };
+    const options: GenerateOptions = { resolveColor: resolveColorInBrowser, icon: (url) => this.#icons.use(url) };
     this.#store = new MirrorStore(options, () => this.#scheduleAll());
+    this.#icons = new DarkIcons(this.#store.create());
     this.#guard.replaceSync(guardRules());
     this.#contrast = new ContrastPass(
       (el, hex) => this.#scopeOf(el.getRootNode())?.addFix(hex),
@@ -135,6 +138,7 @@ export class Engine {
       store: this.#store,
       options,
       guard: this.#guard,
+      icons: this.#icons.sheet,
       schedule: (scope) => this.#schedule(scope),
       discoverShadowRoots: (node) => this.#discoverShadowRoots(node),
       watchText: (node) => this.#contrast.watch(node),
@@ -172,12 +176,14 @@ export class Engine {
    * (no network wait before the theme is complete), revalidated in background.
    */
   seedCache(sheets: Record<string, string>): void {
-    this.#store.seedRemote(sheets);
+    this.#icons.seed(sheets);
+    this.#store.seedRemote(Object.fromEntries(Object.entries(sheets).filter(([key]) => !key.startsWith(ICON_CACHE_PREFIX))));
   }
 
-  /** Mirrors of the stylesheets fetched on this page, by URL, for the per-site cache. */
-  cachedSheets(): Record<string, string> {
-    return this.#store.remoteSnapshot();
+  /** Mirrors of the stylesheets fetched on this page, by URL, and icon analyses, for the per-site cache. */
+  async cachedSheets(): Promise<Record<string, string>> {
+    await Promise.race([Promise.all([this.#store.settled(), this.#icons.settled()]), timeout(REMOTE_TIMEOUT_MS)]);
+    return { ...this.#store.remoteSnapshot(), ...this.#icons.snapshot() };
   }
 
   /** Apply site fixes (spec §8). Selectors must already be valid for this document. */

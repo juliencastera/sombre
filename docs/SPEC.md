@@ -175,9 +175,12 @@ The popup states this and offers "Use Sombre's engine instead" (the site's Dark 
 | Utility CSS (Tailwind v3 `rgb(… / var(--tw-bg-opacity))`, shadcn/ui `hsl(var(--background))`) | Channels transformed, alpha expressions kept; channel variables get per-role twins in the same channel format |
 | Same-origin iframes | `all_frames: true` |
 | Legacy color attributes (`bgcolor`, `<font color>`, `<body text>`) | Per-value `:where([bgcolor="…" i])` rules (zero specificity, like the presentational hints they replace) |
+| Dark icons on transparent backgrounds (CSS `background-image: url()`) | As in Dark Reader: each image is fetched (by the background when cross-origin) and sampled on a 32×32 canvas; ≥ 70 % dark opaque pixels, ≥ 10 % transparent pixels and < 480 000 natural pixels → an inverted copy (SVG stays vector, with a root `filter`; rasters are redrawn through `ctx.filter`). Mirrors write `var(--sombre-icon-<hash>, url(original))` and the property is only defined on `:root` once the verdict is "invert", so a result never regenerates a mirror; verdicts go into the per-site cache. JPEGs and images over 512 KB are skipped |
+| Icons drawn with `mask-image` | The rule's `background-color` is the icon's ink: transformed as text, not as a surface |
 
-**v1.x:** image handling (v1 leaves images untouched, optional mild dimming of large
-bright images). Gradient colors are already transformed since M1.
+**v1.x:** `<img>` elements stay untouched, as in Dark Reader (a dark logo in an `<img>` takes
+an `invert` site fix); optional mild dimming of large bright images. Gradient colors are
+already transformed since M1.
 
 **Out of scope:** `<canvas>` apps (Docs, Figma), closed shadow roots, built-in PDF viewer.
 
@@ -290,7 +293,7 @@ As built in M6:
 | Manifest | MV3 |
 | Language | TypeScript (strict) |
 | Extension framework / build | WXT (Vite) |
-| Content script | Vanilla TS, zero dependencies, built as a WXT unlisted script declared in the manifest (no WXT content script runtime). Budget < 34 KB minified, enforced by an E2E test (33.3 KB in M6; revised from 30 KB as contrast passes, native themes, cache and fixes landed). Chrome code-caches extension scripts, so the remaining cost is negligible. The element picker is a separate script injected on demand |
+| Content script | Vanilla TS, zero dependencies, built as a WXT unlisted script declared in the manifest (no WXT content script runtime). Budget < 37 KB minified, enforced by an E2E test (36.6 KB with dark icons; revised from 30 KB, then 34 KB, as contrast passes, native themes, cache, fixes and image analysis landed). Chrome code-caches extension scripts, so the remaining cost is negligible. The element picker is a separate script injected on demand |
 | Popup / options | Svelte 5 |
 | Unit tests | Vitest (color math, APCA, rule rewriting) |
 | E2E / benchmark | Playwright with extension loaded |

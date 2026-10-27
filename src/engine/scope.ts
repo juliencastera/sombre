@@ -8,6 +8,8 @@ export interface ScopeContext {
   options: GenerateOptions;
   /** Shared sheet forcing shadow content dark until the engine is ready. */
   guard: CSSStyleSheet;
+  /** Dark versions of icons, as custom properties on :root (inherited by shadow trees too). */
+  icons: CSSStyleSheet;
   schedule(scope: Scope): void;
   /** Register open shadow roots found in `node`'s subtree (and `node` itself). */
   discoverShadowRoots(node: Node): void;
@@ -91,7 +93,7 @@ export class Scope {
     const { store, guard } = this.#context;
     const page = this.root.adoptedStyleSheets.filter((sheet) => !store.isOurs(sheet) && sheet !== guard);
     const ours: CSSStyleSheet[] = [];
-    if (this.#base) ours.push(this.#base);
+    if (this.#base) ours.push(this.#base, this.#context.icons);
     ours.push(this.#attributes.sheet);
     for (const source of [...this.root.styleSheets, ...page]) {
       const mirror = store.mirrorOf(source);

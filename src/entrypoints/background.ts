@@ -2,12 +2,14 @@ import { CACHE_INDEX_KEY, CACHE_PREFIX, evictions, type CacheIndex } from '../sh
 import { SHARED_FIXES_URL } from '../shared/config.ts';
 import { FIXES_PUBLIC_KEY } from '../shared/fixes-key.ts';
 import { SHARED_FIXES_KEY, verifyFixList, type FixList } from '../shared/fixes.ts';
-import type { ContentRequest, FetchCssRequest, FetchCssResponse } from '../shared/messages.ts';
+import type { ContentRequest, FetchCssRequest, FetchImageRequest, FetchResponse } from '../shared/messages.ts';
 import { NATIVE_KEY, normalizeSettings, SETTINGS_KEY, sitePatterns } from '../shared/settings.ts';
 
 const BASE_ID = 'sombre-base';
 const FORCED_ID = 'sombre-base-forced';
 const MAX_CSS_BYTES = 8 * 1024 * 1024;
+/** Icons are small; anything larger is a photo or a banner, never inverted. */
+const MAX_IMAGE_BYTES = 512 * 1024;
 
 /**
  * The base layer (public/base-*.css) is registered dynamically rather than in
@@ -87,10 +89,10 @@ const LOCAL_HOST = /^(?:localhost|.*\.(?:local|localhost|internal|lan|home|corp|
 const IP_HOST = /^(?:\[.*\]|\d{1,3}(?:\.\d{1,3}){3})$/;
 
 /**
- * The page cannot read cross-origin stylesheets, so the background fetches them
- * (host permissions bypass CORS). Their mirrored colors end up in a sheet the
- * page can inspect, so private-network targets are refused unless the page
- * itself lives on that origin.
+ * The page cannot read cross-origin stylesheets (nor images, on a canvas), so the
+ * background fetches them (host permissions bypass CORS). Their mirrored colors and
+ * inverted icons end up in sheets the page can inspect, so private-network targets
+ * are refused unless the page itself lives on that origin.
  */
 function mayFetch(target: URL, frameUrl: string | undefined): boolean {
   if (target.protocol !== 'https:' && target.protocol !== 'http:') return false;
@@ -98,7 +100,8 @@ function mayFetch(target: URL, frameUrl: string | undefined): boolean {
   return target.protocol === 'https:' && !target.port && !LOCAL_HOST.test(target.hostname) && !IP_HOST.test(target.hostname);
 }
 
-async function fetchCss(url: string, frameUrl: string | undefined): Promise<FetchCssResponse> {
+/** A stylesheet's text, or an image as a data URL (the content script analyzes it on a canvas). */
+async function fetchResource(url: string, frameUrl: string | undefined, image: boolean): Promise<FetchResponse> {
   let target: URL;
   try {
     target = new URL(url);
@@ -109,9 +112,18 @@ async function fetchCss(url: string, frameUrl: string | undefined): Promise<Fetc
   try {
     const response = await fetch(target, { cache: 'force-cache', credentials: 'omit' });
     if (!response.ok) return { ok: false, error: `HTTP ${response.status}` };
-    const text = await response.text();
-    if (text.length > MAX_CSS_BYTES) return { ok: false, error: 'too large' };
-    return { ok: true, text };
+    if (!image) {
+      const text = await response.text();
+      if (text.length > MAX_CSS_BYTES) return { ok: false, error: 'too large' };
+      return { ok: true, text };
+    }
+    const type = response.headers.get('content-type')?.split(';')[0]?.trim() ?? '';
+    if (!type.startsWith('image/')) return { ok: false, error: 'not an image' };
+    const bytes = new Uint8Array(await response.arrayBuffer());
+    if (bytes.length > MAX_IMAGE_BYTES) return { ok: false, error: 'too large' };
+    let binary = '';
+    for (let i = 0; i < bytes.length; i += 0x8000) binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+    return { ok: true, text: `data:${type};base64,${btoa(binary)}` };
   } catch (error) {
     return { ok: false, error: String(error) };
   }
@@ -133,9 +145,10 @@ export default defineBackground(() => {
     if (CACHE_INDEX_KEY in changes) void evictCache((changes[CACHE_INDEX_KEY]!.newValue ?? {}) as CacheIndex);
   });
 
-  browser.runtime.onMessage.addListener((message: FetchCssRequest, sender, sendResponse) => {
-    if (message?.type !== 'sombre:fetch-css' || sender.id !== browser.runtime.id) return;
-    void fetchCss(message.url, sender.url).then(sendResponse);
+  browser.runtime.onMessage.addListener((message: FetchCssRequest | FetchImageRequest, sender, sendResponse) => {
+    const image = message?.type === 'sombre:fetch-image';
+    if ((!image && message?.type !== 'sombre:fetch-css') || sender.id !== browser.runtime.id) return;
+    void fetchResource(message.url, sender.url, image).then(sendResponse);
     return true;
   });
 

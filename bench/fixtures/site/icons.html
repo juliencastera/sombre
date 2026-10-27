@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Fixture — dark icons</title>
+    <link rel="stylesheet" href="common.css" />
+    <!-- Dark icons on transparent backgrounds, invisible on a dark page unless inverted: Gmail's compose pencil (::before, cross-origin), a PNG toolbar icon, a mask-image icon. A light opaque picture must stay as it is. -->
+    <style>
+      .compose {
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        padding: 16px 24px;
+        border-radius: 16px;
+        background: #c2e7ff;
+        color: #001d35;
+        font-weight: 500;
+      }
+      .compose::before {
+        content: '';
+        width: 24px;
+        height: 24px;
+        background-image: url(https://cdn.sombre-assets.dev/icons/pencil.svg);
+      }
+      .icon {
+        display: inline-block;
+        width: 24px;
+        height: 24px;
+        margin: 16px;
+      }
+      .mail {
+        background: url(icons/mail.png) no-repeat;
+      }
+      .photo {
+        width: 48px;
+        height: 32px;
+        background-image: url(icons/photo.svg);
+      }
+      .masked {
+        -webkit-mask: url(icons/pencil.svg) center / 24px no-repeat;
+        background-color: #444746;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="compose">Compose</div>
+    <span class="icon mail"></span>
+    <span class="icon photo"></span>
+    <span class="icon masked"></span>
+  </body>
+</html>

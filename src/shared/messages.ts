@@ -6,7 +6,14 @@ export interface FetchCssRequest {
   url: string;
 }
 
-export type FetchCssResponse = { ok: true; text: string } | { ok: false; error: string };
+/** Content script → background: fetch an image to analyze as a data URL (a canvas cannot read cross-origin images). */
+export interface FetchImageRequest {
+  type: 'sombre:fetch-image';
+  url: string;
+}
+
+/** The stylesheet's text, or the image as a data URL. */
+export type FetchResponse = { ok: true; text: string } | { ok: false; error: string };
 
 /** Background → content script (top frame): the keyboard shortcut was pressed. */
 export interface ToggleSiteRequest {
