@@ -79,10 +79,23 @@ describe('fixTextColor', () => {
     expect(Math.abs(rgbToOklch(fixed).h - rgbToOklch(rgb('#3b5bdb')).h)).toBeLessThan(8);
   });
 
-  it('returns the extreme when the floor is unreachable', () => {
-    // #888 counts as a light background: the fix darkens, down to black.
+  it('returns the extreme with the most contrast when the floor is unreachable', () => {
+    // On #888 neither reaches 90; white text beats black (APCA, reverse polarity).
     const fixed = fixTextColor(rgb('#777777'), rgb('#888888'), 90)!;
-    expect(rgbToOklch(fixed).l).toBeCloseTo(0, 2);
+    expect(rgbToOklch(fixed).l).toBeCloseTo(1, 2);
+    expect(lc(fixed, '#888888')).toBeGreaterThan(lc('#000000', '#888888'));
+  });
+
+  it('never lowers contrast: white on a mid-tone button stays white', () => {
+    // GitHub's green "Code" button: white text below the small-text floor, black far worse.
+    expect(fixTextColor(rgb('#ffffff'), rgb('#31843e'), 80)).toBeNull();
+  });
+
+  it('switches direction when only the other one reaches the floor', () => {
+    // #888 counts as light, but darker text tops out near Lc 47: lighter text reaches 60.
+    const fixed = fixTextColor(rgb('#777777'), rgb('#888888'), 60)!;
+    expect(lc(fixed, '#888888')).toBeGreaterThanOrEqual(60);
+    expect(rgbToOklch(fixed).l).toBeGreaterThan(0.9);
   });
 });
 

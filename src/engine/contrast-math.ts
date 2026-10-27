@@ -24,24 +24,32 @@ export function requiredLc(target: number, fontSizePx: number, fontWeight: numbe
 /**
  * The text color closest in lightness to `text` (same hue, chroma reduced only
  * to stay in gamut) reaching `required` |Lc| against `background`, or null when
- * `text` already does. When even white/black cannot reach it, the extreme is
- * returned.
+ * `text` already does. Lighter text is tried first on dark backgrounds, darker
+ * text on light ones. When neither white nor black reaches the floor (white on a
+ * mid-tone button), the extreme with the most contrast is returned, or null when
+ * `text` already beats it: a fix never lowers contrast.
  */
 export function fixTextColor(text: Rgb, background: Rgb, required: number): Rgb | null {
-  if (Math.abs(apcaContrast(text, background)) >= required) return null;
+  const original = Math.abs(apcaContrast(text, background));
+  if (original >= required) return null;
   const { l, c, h } = rgbToOklch(text);
-  const lighter = perceivedLightness(background) < 0.5;
   const at = (lightness: number) => oklchToRgb({ l: lightness, c, h });
+  const contrast = (lightness: number) => Math.abs(apcaContrast(at(lightness), background));
   // Aim slightly above the floor: the result is rounded to 8-bit channels afterwards.
-  const passes = (lightness: number) => Math.abs(apcaContrast(at(lightness), background)) >= required + 0.6;
+  const passes = (lightness: number) => contrast(lightness) >= required + 0.6;
 
-  let near = l;
-  let far = lighter ? 1 : 0;
-  if (!passes(far)) return at(far);
-  for (let i = 0; i < 14; i++) {
-    const mid = (near + far) / 2;
-    if (passes(mid)) far = mid;
-    else near = mid;
+  const preferLighter = perceivedLightness(background) < 0.5;
+  for (const extreme of preferLighter ? [1, 0] : [0, 1]) {
+    if (!passes(extreme)) continue;
+    let near = l;
+    let far = extreme;
+    for (let i = 0; i < 14; i++) {
+      const mid = (near + far) / 2;
+      if (passes(mid)) far = mid;
+      else near = mid;
+    }
+    return at(far);
   }
-  return at(far);
+  const best = contrast(1) >= contrast(0) ? 1 : 0;
+  return contrast(best) > original ? at(best) : null;
 }
