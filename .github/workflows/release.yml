@@ -51,5 +51,10 @@ jobs:
       - run: npm run zip
       - name: Attach the zip to the release
         run: |
-          gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --title "$TAG" --notes "See [CHANGELOG.md](CHANGELOG.md)."
+          if ! gh release view "$TAG" >/dev/null 2>&1; then
+            # A tag without a release (made by hand): its notes are its section of the changelog on main.
+            git fetch --depth=1 origin main
+            git show FETCH_HEAD:CHANGELOG.md | awk -v v="${TAG#v}" 'index($0, "## " v " ") == 1 || index($0, "## [" v "]") == 1 { f = 1; next } f && /^## / { exit } f' > notes.md
+            gh release create "$TAG" --title "$TAG" --notes-file notes.md
+          fi
           gh release upload "$TAG" .output/sombre-*-chrome.zip --clobber
