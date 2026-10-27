@@ -280,8 +280,10 @@ As built in M6:
 - "Report this site" opens a **pre-filled GitHub issue** in a new tab: domain only
   (no path/query), extension version, contrast level, site state, browser + version.
   User reviews everything before submitting.
-- Store listing + privacy policy state: *"No browsing data leaves your browser. The only
-  network request downloads the signed fix list."*
+- Store listing + privacy policy ([PRIVACY.md](../PRIVACY.md)) state: *"No browsing data leaves
+  your browser."* Network requests are the daily signed fix list and the stylesheets and images a
+  page references, fetched again from the same addresses to compute their dark version (other
+  domains without cookies).
 - Known limitation: requires a GitHub account (account-less form deferred).
 
 ---
@@ -344,7 +346,7 @@ No durations until M0 gives a real velocity baseline.
 | M4 | Speed & polish | SWR cache, View Transition, perf budget | Toggle < 50 ms; 0 light frames on 2nd visit |
 | M5 | Full UX | Final Svelte popup, per-site states with reason, options page, i18n FR/EN | All §7 flows covered by E2E tests |
 | M6 | Fixes | Element picker, bundled list, signed remote list, export, Report button | A broken site fixable in < 3 clicks |
-| M7 | Release | Store listing FR/EN, privacy policy, comparison report, Edge Add-ons | Beats Dark Reader on all §11 metrics across the corpus |
+| M7 | Release | Store listing FR/EN, privacy policy, comparison report, Edge Add-ons (package, texts and images in `store/`) | Beats Dark Reader on all §11 metrics across the corpus |
 
 ---
 

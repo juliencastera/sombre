@@ -16,7 +16,7 @@ BENCH_FLAGS = $(if $(SITES),--sites=$(SITES)) $(if $(TARGETS),--targets=$(TARGET
 	$(if $(SCHEME),--scheme=$(SCHEME)) $(if $(HAR),--har=$(HAR)) $(if $(HEADED),--headed) $(ARGS)
 
 .DEFAULT_GOAL := help
-.PHONY: help install dev build zip icons check lint format test test-watch e2e verify \
+.PHONY: help install dev build zip icons store-images check lint format test test-watch e2e verify \
 	bench-setup bench-record bench fixes-keygen fixes-sign clean
 
 help: ## List the targets
@@ -38,6 +38,9 @@ zip: ## Build and package the extension as a zip for the Chrome Web Store
 
 icons: ## Regenerate public/icon/*.png
 	node scripts/generate-icons.ts
+
+store-images: build ## Regenerate the Chrome Web Store screenshots and promo tiles (store/images)
+	node scripts/store-images.ts
 
 ##@ Quality
 

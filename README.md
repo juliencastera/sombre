@@ -5,7 +5,8 @@
 Dark mode for every website: no white flash, guaranteed text contrast, instant toggle.
 
 Chromium extension (Chrome, Edge, Brave, Arc, Opera, Vivaldi), MV3, English and French.
-Design and roadmap: [docs/SPEC.md](docs/SPEC.md).
+Design and roadmap: [docs/SPEC.md](docs/SPEC.md). Privacy: [PRIVACY.md](PRIVACY.md). Store listing, images and
+submission guide: [store/](store/README.md).
 
 ## Development
 

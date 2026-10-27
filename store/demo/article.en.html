@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Field Notes — Reading at night</title>
+    <!-- Demo page for the store screenshots: an ordinary light website, as most of the web is. -->
+    <style>
+      body {
+        margin: 0;
+        background: #ffffff;
+        color: #1f2328;
+        font:
+          16px/1.6 system-ui,
+          -apple-system,
+          'Segoe UI',
+          Roboto,
+          sans-serif;
+      }
+      header {
+        display: flex;
+        align-items: center;
+        gap: 32px;
+        padding: 14px 48px;
+        border-bottom: 1px solid #e5e7eb;
+        background: #f8fafc;
+      }
+      .logo {
+        font-weight: 700;
+        font-size: 19px;
+        color: #0f172a;
+      }
+      nav a {
+        margin-right: 22px;
+        color: #475569;
+        text-decoration: none;
+        font-size: 15px;
+      }
+      .search {
+        margin-left: auto;
+        width: 220px;
+        padding: 7px 12px 7px 34px;
+        border: 1px solid #d0d7de;
+        border-radius: 8px;
+        background: #ffffff
+          url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24'%3E%3Cpath fill='%2357606a' d='M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14'/%3E%3C/svg%3E")
+          10px center no-repeat;
+        color: #57606a;
+        font-size: 14px;
+      }
+      .subscribe {
+        padding: 8px 16px;
+        border-radius: 8px;
+        background: #2563eb;
+        color: #ffffff;
+        font-weight: 600;
+        font-size: 14px;
+      }
+      main {
+        display: grid;
+        grid-template-columns: 1fr 300px;
+        gap: 48px;
+        max-width: 1120px;
+        margin: 0 auto;
+        padding: 36px 48px;
+      }
+      .tag {
+        display: inline-block;
+        padding: 2px 10px;
+        border-radius: 999px;
+        background: #ecfdf5;
+        color: #047857;
+        font-size: 13px;
+        font-weight: 600;
+      }
+      h1 {
+        margin: 12px 0 6px;
+        font-size: 38px;
+        line-height: 1.2;
+        color: #0f172a;
+      }
+      .meta {
+        color: #8b949e;
+        font-size: 14px;
+      }
+      p {
+        margin: 16px 0;
+      }
+      .note {
+        padding: 14px 18px;
+        border-left: 4px solid #f59e0b;
+        border-radius: 6px;
+        background: #fffbeb;
+        color: #78350f;
+      }
+      pre {
+        padding: 16px 18px;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        background: #f6f8fa;
+        font:
+          14px/1.5 ui-monospace,
+          'Cascadia Code',
+          Consolas,
+          monospace;
+        color: #24292f;
+      }
+      .k {
+        color: #cf222e;
+      }
+      .s {
+        color: #0a3069;
+      }
+      .c {
+        color: #8c959f;
+      }
+      aside .card {
+        margin-bottom: 20px;
+        padding: 18px;
+        border: 1px solid #e5e7eb;
+        border-radius: 10px;
+        background: #ffffff;
+        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+      }
+      aside h3 {
+        margin: 0 0 10px;
+        font-size: 15px;
+        color: #0f172a;
+      }
+      aside li {
+        margin: 6px 0;
+        color: #57606a;
+        font-size: 14px;
+      }
+      aside a {
+        color: #2563eb;
+        text-decoration: none;
+      }
+      .muted {
+        color: #a0a7b1;
+        font-size: 13px;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <span class="logo">Field Notes</span>
+      <nav><a href="#">Articles</a><a href="#">Guides</a><a href="#">Newsletter</a><a href="#">About</a></nav>
+      <span class="search">Search articles</span>
+      <span class="subscribe">Subscribe</span>
+    </header>
+    <main>
+      <article>
+        <span class="tag">Accessibility</span>
+        <h1>Reading at night without burning your eyes</h1>
+        <div class="meta">Camille Laurent · 8 min read · Updated October 2026</div>
+        <p>
+          Most of the web is still designed for daylight: white pages, light grey captions, thin borders. At night, a single white
+          tab is enough to wake you up, and the small grey text that looked elegant at noon becomes unreadable.
+        </p>
+        <div class="note">A good dark mode is not an inverted page: colors keep their meaning, and text stays readable.</div>
+        <p>
+          Dark themes work best when every surface, border and shadow is recomputed, not just the background. Here is the kind of
+          rule a reading mode has to understand:
+        </p>
+        <pre><span class="k">.article</span> {
+  <span class="k">background</span>: <span class="s">#ffffff</span>;
+  <span class="k">color</span>: <span class="s">#1f2328</span>;  <span class="c">/* light page, dark text */</span>
+}</pre>
+        <p>
+          Contrast matters even more than color. Captions, timestamps and placeholders are often below any readable threshold, and
+          they are exactly what you look for when you skim.
+        </p>
+        <p class="muted">Photo credits and footnotes are kept small on purpose.</p>
+      </article>
+      <aside>
+        <div class="card">
+          <h3>Popular this week</h3>
+          <ul>
+            <li><a href="#">Why your phone's night mode is not enough</a></li>
+            <li><a href="#">Choosing a font for long reads</a></li>
+            <li><a href="#">APCA, explained simply</a></li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Newsletter</h3>
+          <p class="muted">One email a month. No tracking, unsubscribe anytime.</p>
+          <span class="subscribe">Subscribe</span>
+        </div>
+      </aside>
+    </main>
+  </body>
+</html>
