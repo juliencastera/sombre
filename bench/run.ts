@@ -121,6 +121,7 @@ async function runOne(site: Site, target: Target, runDir: string): Promise<RunRe
     const media = await page.evaluate(collectMediaRects);
     const bright = brightFraction(decodePng(shot), PIXEL_STRIDE, THRESHOLDS.brightPixelL, media);
     const contrast = analyzeContrast(await page.evaluate(collectTextSamples, MAX_TEXT_SAMPLES));
+    const native = session.native ? await session.native(site.url) : undefined;
     const toggle = await measureToggle(page, session);
 
     return {
@@ -133,6 +134,7 @@ async function runOne(site: Site, target: Target, runDir: string): Promise<RunRe
       brightFraction: Math.round(bright * 1000) / 1000,
       contrast,
       toggle,
+      native,
       screenshot,
     };
   } finally {

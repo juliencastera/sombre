@@ -70,6 +70,18 @@ function headToHead(report: RunReport, metric: Metric) {
 const escapeHtml = (text: string) =>
   text.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 
+/** "target: site, site" lines for targets that report native dark theme detection. */
+function nativeSummary(report: RunReport): string[] {
+  const byTarget = new Map<string, string[]>();
+  for (const r of report.results) {
+    if (r.native === undefined) continue;
+    const list = byTarget.get(r.target) ?? [];
+    if (r.native) list.push(r.site);
+    byTarget.set(r.target, list);
+  }
+  return [...byTarget].map(([target, sites]) => `${TARGETS[target as TargetId].label}: ${sites.join(', ') || 'none'}`);
+}
+
 function markdown(report: RunReport): string {
   const { sites, targets, find } = index(report);
   const { meta } = report;
@@ -93,6 +105,8 @@ function markdown(report: RunReport): string {
     }
     lines.push('');
   }
+  const native = nativeSummary(report);
+  if (native.length) lines.push('## Native dark themes detected', '', ...native.map((line) => `- ${line}`), '');
   const problems = report.results.filter((r) => r.status !== 'ok');
   if (problems.length) {
     lines.push('## Skipped / errors', '');
@@ -166,6 +180,7 @@ function html(report: RunReport): string {
 <p class="meta">${escapeHtml(meta.startedAt)} · ${escapeHtml(meta.browser ?? 'unknown browser')} · OS scheme ${meta.scheme} · network ${meta.harMode}
  · ${escapeHtml(Object.entries(meta.versions).map(([id, v]) => `${id} ${v}`).join(', '))}</p>
 ${tables}
+${nativeSummary(report).length ? `<h2>Native dark themes detected</h2><ul>${nativeSummary(report).map((line) => `<li>${escapeHtml(line)}</li>`).join('')}</ul>` : ''}
 <h2>Screenshots after second visit</h2>
 ${shots}
 </body></html>`;

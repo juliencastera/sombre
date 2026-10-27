@@ -15,6 +15,8 @@ export type TargetId = 'control' | 'darkreader' | 'sombre';
 export interface TargetSession {
   /** Switch dark mode on/off for the site at `url`. Resolves with the epoch ms at which the command was sent. */
   toggle?: (enabled: boolean, url: string) => Promise<number>;
+  /** Whether the target recognized the site at `url` as shipping its own dark theme. */
+  native?: (url: string) => Promise<boolean>;
 }
 
 export interface Target {
@@ -99,6 +101,11 @@ const sombre: Target = {
       throw new Error('Sombre base layer never registered');
     });
     return {
+      native: (url) =>
+        worker.evaluate(async (hostname) => {
+          const stored = (await chrome.storage.local.get('sombre:native'))['sombre:native'] ?? {};
+          return hostname.replace(/^www./, '') in stored;
+        }, new URL(url).hostname),
       // Same path as the shortcut: "off" adds a never-exception, "on" removes it (back to the dark default).
       // Content scripts react to the storage change.
       toggle: (enabled, url) =>

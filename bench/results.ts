@@ -34,6 +34,8 @@ export interface RunResult {
   brightFraction?: number;
   contrast?: ContrastStats;
   toggle?: ToggleStats | null;
+  /** Detected as shipping its own dark theme (targets that report it). */
+  native?: boolean;
   /** Path relative to the run directory. */
   screenshot?: string;
 }
