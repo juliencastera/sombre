@@ -3,11 +3,13 @@ import type { ContentRequest, PageState } from '../shared/messages.ts';
 import {
   findSiteKey,
   NATIVE_KEY,
+  normalizeNative,
   normalizeSettings,
   resolveEffective,
   SETTINGS_KEY,
   siteKey,
   toggleSite,
+  type NativeMarker,
   type Settings,
 } from '../shared/settings.ts';
 
@@ -21,11 +23,13 @@ function frameHostname(): string {
   }
 }
 
-async function recordNative(hostname: string, native: boolean): Promise<void> {
+async function recordNative(hostname: string, native: boolean, marker: NativeMarker | null = null): Promise<void> {
   const key = siteKey(hostname);
-  const stored = ((await browser.storage.local.get(NATIVE_KEY))[NATIVE_KEY] ?? {}) as Record<string, number>;
-  if (native === key in stored) return;
-  if (native) stored[key] = Date.now();
+  const stored = normalizeNative((await browser.storage.local.get(NATIVE_KEY))[NATIVE_KEY]);
+  const current = stored[key];
+  if (!native && !current) return;
+  if (native && current && JSON.stringify(current.marker ?? null) === JSON.stringify(marker)) return;
+  if (native) stored[key] = { at: Date.now(), ...(marker && { marker }) };
   else delete stored[key];
   await browser.storage.local.set({ [NATIVE_KEY]: stored });
 }
@@ -49,12 +53,16 @@ export default defineContentScript({
     const osQuery = matchMedia('(prefers-color-scheme: dark)');
     const engine = new Engine(
       () => osQuery.matches,
-      () => {
-        if (isTop) void recordNative(hostname, true);
+      (marker) => {
+        if (isTop) void recordNative(hostname, true, marker);
       },
     );
 
-    let settings: Settings = normalizeSettings((await browser.storage.local.get(SETTINGS_KEY))[SETTINGS_KEY]);
+    const stored = await browser.storage.local.get([SETTINGS_KEY, NATIVE_KEY]);
+    let settings: Settings = normalizeSettings(stored[SETTINGS_KEY]);
+    engine.setContrast(settings.contrast);
+    const remembered = normalizeNative(stored[NATIVE_KEY])[siteKey(hostname)]?.marker;
+    if (remembered && resolveEffective(settings, hostname, osQuery.matches).on) engine.applyRememberedMarker(remembered);
 
     const update = async (animate: boolean) => {
       const effective = resolveEffective(settings, hostname, osQuery.matches);
@@ -68,6 +76,7 @@ export default defineContentScript({
     browser.storage.onChanged.addListener((changes, area) => {
       if (area !== 'local' || !(SETTINGS_KEY in changes)) return;
       settings = normalizeSettings(changes[SETTINGS_KEY]!.newValue);
+      engine.setContrast(settings.contrast);
       void update(true);
     });
     osQuery.addEventListener('change', () => void update(true));

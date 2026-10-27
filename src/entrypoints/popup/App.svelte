@@ -8,6 +8,7 @@
     resolveEffective,
     SETTINGS_KEY,
     siteKey,
+    type ContrastLevel,
     type Mode,
     type Reason,
     type Settings,
@@ -60,6 +61,10 @@
     void save({ ...settings, sites });
   }
 
+  function setContrast(contrast: ContrastLevel) {
+    void save({ ...settings, contrast });
+  }
+
   function setMode(mode: Mode) {
     void save({ ...settings, mode });
   }
@@ -87,6 +92,15 @@
   {/if}
 
   {#if loaded}
+    <section class="field">
+      <span class="label" id="contrast-label">Contrast</span>
+      <div class="segmented" role="radiogroup" aria-labelledby="contrast-label">
+        {#each [['soft', 'Soft'], ['standard', 'Standard'], ['high', 'High']] as const as [level, label] (level)}
+          <button role="radio" aria-checked={settings.contrast === level} onclick={() => setContrast(level)}>{label}</button>
+        {/each}
+      </div>
+    </section>
+
     <footer>
       <label>
         Default
@@ -170,6 +184,15 @@
   select:focus-visible {
     outline: 2px solid #7aa2ff;
     outline-offset: 1px;
+  }
+
+  .field {
+    display: grid;
+    gap: 6px;
+  }
+
+  .label {
+    color: #a0a0a8;
   }
 
   footer {
