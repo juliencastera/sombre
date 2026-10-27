@@ -16,6 +16,9 @@ npm test           # unit tests (Vitest)
 npm run test:e2e   # builds, then end-to-end tests of popup, options, shortcut (Playwright)
 ```
 
+The same actions are available through `make` (`make` alone lists them), for example
+`make verify` before a commit, or `make bench SITES=real HAR=live`.
+
 ## Try it
 
 `npm run build`, then in `chrome://extensions` enable Developer mode and *Load unpacked* `.output/chrome-mv3`.
