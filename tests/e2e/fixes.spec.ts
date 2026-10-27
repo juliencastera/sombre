@@ -52,6 +52,19 @@ test('"Invert" and "Force dark" apply at once', async ({ context, openPopup }) =
   await expect.poll(() => background(page, 'pre')).toBe('rgb(22, 22, 22)');
 });
 
+test('a fix can target an icon drawn by a pseudo-element', async ({ context, worker }) => {
+  await worker.evaluate(async () => {
+    await chrome.storage.local.set({ 'sombre:fixes': { 'sombre-bench.dev': [{ selector: 'h1::before', action: 'invert' }] } });
+  });
+  const page = await context.newPage();
+  await page.goto(fixture('basic'));
+  const filter = (pseudo: string | null) =>
+    page.evaluate((p) => getComputedStyle(document.querySelector('h1')!, p).filter, pseudo);
+  await expect.poll(() => filter('::before')).toBe('invert(1) hue-rotate(180deg)');
+  // The element itself, text and background, is left alone.
+  expect(await filter(null)).toBe('none');
+});
+
 test('the shared list applies, unless turned off', async ({ context, worker, openOptions }) => {
   // Installed with the bundled, signed list.
   await expect

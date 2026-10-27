@@ -34,16 +34,21 @@ const baseRules = () =>
 const guardRules = () =>
   `*{background-color:${canvas()}!important;color:${canvasText()}!important;border-color:${border()}!important}`;
 
+/** A trailing pseudo-element (an icon drawn by `::before`), which `:is()` cannot hold. */
+const PSEUDO_ELEMENT = /::?(before|after)\s*$/i;
+
 /** CSS for one invert / force-dark / set-color fix (`ignore` works through the mirrors' scope limit). */
 function fixRule(fix: Fix): string {
-  const s = fix.selector;
+  const pseudo = PSEUDO_ELEMENT.exec(fix.selector);
+  const s = `:is(${pseudo ? fix.selector.slice(0, pseudo.index) : fix.selector})${pseudo ? `::${pseudo[1]!.toLowerCase()}` : ''}`;
   switch (fix.action) {
     case 'invert':
-      return `:is(${s}){filter:invert(1) hue-rotate(180deg)!important}`;
+      return `${s}{filter:invert(1) hue-rotate(180deg)!important}`;
     case 'force-dark':
-      return `:is(${s}),:is(${s}) *{background-color:${canvas()}!important;color:${canvasText()}!important;border-color:${border()}!important}`;
+      // A pseudo-element has no descendants to darken.
+      return `${s}${pseudo ? '' : `,${s} *`}{background-color:${canvas()}!important;color:${canvasText()}!important;border-color:${border()}!important}`;
     case 'set-color':
-      return `:is(${s}){${fix.property}:${fix.value}!important}`;
+      return `${s}{${fix.property}:${fix.value}!important}`;
     default:
       return '';
   }
