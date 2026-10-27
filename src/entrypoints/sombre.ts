@@ -1,4 +1,13 @@
 import { Engine } from '../engine/engine.ts';
+import {
+  CACHE_INDEX_KEY,
+  CACHE_PREFIX,
+  cacheVersion,
+  mergeSheets,
+  sheetsSize,
+  type CacheEntry,
+  type CacheIndex,
+} from '../shared/cache.ts';
 import type { ContentRequest, PageState } from '../shared/messages.ts';
 import {
   findSiteKey,
@@ -34,6 +43,21 @@ async function recordNative(hostname: string, native: boolean, marker: NativeMar
   await browser.storage.local.set({ [NATIVE_KEY]: stored });
 }
 
+/** Merge this page's fetched-stylesheet mirrors into the site's cache entry. */
+async function writeCache(
+  key: string,
+  version: string,
+  sheets: Record<string, string>,
+  previous: CacheEntry | undefined,
+): Promise<void> {
+  const merged = mergeSheets(previous?.version === version ? previous.sheets : undefined, sheets);
+  if (!merged) return;
+  const entry: CacheEntry = { version, sheets: merged, at: Date.now() };
+  const index = ((await browser.storage.local.get(CACHE_INDEX_KEY))[CACHE_INDEX_KEY] ?? {}) as CacheIndex;
+  index[key] = { at: entry.at, size: sheetsSize(merged) };
+  await browser.storage.local.set({ [CACHE_PREFIX + key]: entry, [CACHE_INDEX_KEY]: index });
+}
+
 /**
  * The engine's content script. Built as an unlisted script and declared in the
  * manifest by wxt.config.ts (document_start, all frames): unlike a WXT content
@@ -58,11 +82,21 @@ export default defineUnlistedScript(async () => {
     },
   );
 
-  const stored = await browser.storage.local.get([SETTINGS_KEY, NATIVE_KEY]);
+  const key = siteKey(hostname);
+  const cacheKey = CACHE_PREFIX + key;
+  const stored = await browser.storage.local.get([SETTINGS_KEY, NATIVE_KEY, ...(isTop ? [cacheKey] : [])]);
   let settings: Settings = normalizeSettings(stored[SETTINGS_KEY]);
   engine.setContrast(settings.contrast);
-  const remembered = normalizeNative(stored[NATIVE_KEY])[siteKey(hostname)]?.marker;
-  if (remembered && resolveEffective(settings, hostname, osQuery.matches).on) engine.applyRememberedMarker(remembered);
+  const verdict = normalizeNative(stored[NATIVE_KEY])[key];
+  const startsOn = resolveEffective(settings, hostname, osQuery.matches).on;
+  if (verdict?.marker && startsOn) engine.applyRememberedMarker(verdict.marker);
+
+  // Stale-while-revalidate: mirrors of known stylesheets without waiting for the network.
+  const extensionVersion = browser.runtime.getManifest().version;
+  const cached = stored[cacheKey] as CacheEntry | undefined;
+  if (cached?.version === cacheVersion(extensionVersion, settings.contrast, Boolean(verdict))) {
+    engine.seedCache(cached.sheets);
+  }
 
   const update = async (animate: boolean) => {
     const effective = resolveEffective(settings, hostname, osQuery.matches);
@@ -93,10 +127,27 @@ export default defineUnlistedScript(async () => {
         };
         sendResponse(state);
       } else if (message.type === 'sombre:toggle-site') {
-        void browser.storage.local.set({ [SETTINGS_KEY]: toggleSite(settings, hostname, osQuery.matches) });
+        // Apply right away; the storage change that follows finds nothing left to do.
+        settings = toggleSite(settings, hostname, osQuery.matches);
+        void update(true);
+        void browser.storage.local.set({ [SETTINGS_KEY]: settings });
       }
     });
   }
 
   await update(false);
+
+  if (isTop) {
+    const save = () =>
+      requestIdleCallback(
+        () => {
+          const sheets = engine.cachedSheets();
+          const version = cacheVersion(extensionVersion, settings.contrast, engine.native);
+          if (Object.keys(sheets).length) void writeCache(key, version, sheets, cached);
+        },
+        { timeout: 5000 },
+      );
+    if (document.readyState === 'complete') save();
+    else addEventListener('load', save, { once: true });
+  }
 });

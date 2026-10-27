@@ -21,6 +21,7 @@ export const EVENTS = { sheet: 'sombre:sheet', shadow: 'sombre:shadow', adopted:
 const LINK_TIMEOUT_MS = 2000;
 const REMOTE_TIMEOUT_MS = 2500;
 const DOM_READY_TIMEOUT_MS = 1000;
+const VIEW_TRANSITION_MAX_ELEMENTS = 1500;
 
 const canvas = () => formatColor(transformColor({ r: 255, g: 255, b: 255, a: 1 }, 'bg'));
 const canvasText = () => formatColor(transformColor({ r: 0, g: 0, b: 0, a: 1 }, 'fg'));
@@ -90,6 +91,8 @@ export class Engine {
   #started = false;
   #ready = false;
   #flushQueued = false;
+  #rendered = false;
+  #renderedOn = false;
 
   constructor(osDark: () => boolean, onNative: (marker: NativeMarker | null) => void) {
     this.#osDark = osDark;
@@ -137,6 +140,19 @@ export class Engine {
     if (this.#started) this.#regenerate();
   }
 
+  /**
+   * Mirrors of fetched stylesheets from previous visits, by URL: used at once
+   * (no network wait before the theme is complete), revalidated in background.
+   */
+  seedCache(sheets: Record<string, string>): void {
+    this.#store.seedRemote(sheets);
+  }
+
+  /** Mirrors of the stylesheets fetched on this page, by URL, for the per-site cache. */
+  cachedSheets(): Record<string, string> {
+    return this.#store.remoteSnapshot();
+  }
+
   /** Re-apply a marker remembered from a previous visit, before first paint. */
   applyRememberedMarker(marker: NativeMarker): void {
     this.#marker = marker;
@@ -146,12 +162,13 @@ export class Engine {
   }
 
   async setEnabled(on: boolean, options: EnableOptions): Promise<void> {
+    const changed = on !== this.#on || !this.#rendered;
     this.#on = on;
     if (on) {
       this.#starting ??= this.#start(options.ignoreNative);
       await this.#starting;
     }
-    this.#render(options.animate && this.#ready);
+    if (changed || on !== this.#renderedOn) this.#render(options.animate && this.#ready);
   }
 
   #render(animate: boolean): void {
@@ -164,8 +181,13 @@ export class Engine {
       this.#guard.disabled = !active || this.#ready;
       if (this.#marker) applyMarker(this.#marker, this.#on);
     };
+    this.#rendered = true;
+    this.#renderedOn = this.#on;
     const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (animate && !reducedMotion && document.visibilityState === 'visible' && 'startViewTransition' in document) {
+    // Capturing a View Transition snapshot costs about a frame per few thousand elements:
+    // large pages switch instantly instead of late.
+    const small = document.getElementsByTagName('*').length <= VIEW_TRANSITION_MAX_ELEMENTS;
+    if (animate && small && !reducedMotion && document.visibilityState === 'visible' && 'startViewTransition' in document) {
       document.startViewTransition(apply);
     } else {
       apply();

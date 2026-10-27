@@ -42,6 +42,8 @@ async function generateRemote(url: string, options: GenerateOptions, depth: numb
 export class RemoteSheets {
   readonly #done = new Map<string, string>();
   readonly #pending = new Map<string, Promise<void>>();
+  /** Seeded from the cache and not revalidated yet. */
+  readonly #stale = new Set<string>();
   readonly #options: GenerateOptions;
   readonly #onLoaded: () => void;
 
@@ -50,10 +52,29 @@ export class RemoteSheets {
     this.#onLoaded = onLoaded;
   }
 
+  /** Cached mirrors from a previous visit, served at once and revalidated on first use. */
+  seed(sheets: Record<string, string>): void {
+    for (const [url, css] of Object.entries(sheets)) {
+      if (this.#done.has(url)) continue;
+      this.#done.set(url, css);
+      this.#stale.add(url);
+    }
+  }
+
+  /** Mirrors generated on this page, by URL (cached ones that turned out current included). */
+  snapshot(): Record<string, string> {
+    const out: Record<string, string> = {};
+    for (const [url, css] of this.#done) if (css && !this.#stale.has(url)) out[url] = css;
+    return out;
+  }
+
   /** Generated CSS for `url`, or null while it is being fetched (a fetch is started on first call). */
   get(url: string): string | null {
     const css = this.#done.get(url);
-    if (css !== undefined) return css;
+    if (css !== undefined) {
+      if (this.#stale.delete(url)) this.#revalidate(url, css);
+      return css;
+    }
     if (!this.#pending.has(url)) {
       const task = generateRemote(url, this.#options, 0)
         .catch(() => '')
@@ -70,6 +91,16 @@ export class RemoteSheets {
   /** Forget generated CSS (the contrast level changed); texts come back from the HTTP cache. */
   reset(): void {
     this.#done.clear();
+    this.#stale.clear();
+  }
+
+  #revalidate(url: string, cached: string): void {
+    void generateRemote(url, this.#options, 0)
+      .then((css) => {
+        this.#done.set(url, css);
+        if (css !== cached) this.#onLoaded();
+      })
+      .catch(() => {});
   }
 
   /** Resolves once every fetch started so far has settled. */

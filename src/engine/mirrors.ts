@@ -49,6 +49,14 @@ export class MirrorStore {
     return sheet;
   }
 
+  seedRemote(sheets: Record<string, string>): void {
+    this.#remote.seed(sheets);
+  }
+
+  remoteSnapshot(): Record<string, string> {
+    return this.#remote.snapshot();
+  }
+
   isOurs(sheet: CSSStyleSheet): boolean {
     return this.#ours.has(sheet);
   }

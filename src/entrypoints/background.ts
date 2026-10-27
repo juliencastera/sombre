@@ -1,3 +1,4 @@
+import { CACHE_INDEX_KEY, CACHE_PREFIX, evictions, type CacheIndex } from '../shared/cache.ts';
 import type { ContentRequest, FetchCssRequest, FetchCssResponse } from '../shared/messages.ts';
 import { NATIVE_KEY, normalizeSettings, SETTINGS_KEY, sitePatterns } from '../shared/settings.ts';
 
@@ -38,6 +39,15 @@ async function syncRegistrations(): Promise<void> {
   const existing = await browser.scripting.getRegisteredContentScripts({ ids: [BASE_ID, FORCED_ID] });
   if (existing.length) await browser.scripting.unregisterContentScripts({ ids: existing.map((script) => script.id) });
   if (scripts.length) await browser.scripting.registerContentScripts(scripts);
+}
+
+/** Keep the per-site theme cache within its limits, least recently used first. */
+async function evictCache(index: CacheIndex): Promise<void> {
+  const evicted = evictions(index);
+  if (!evicted.length) return;
+  for (const key of evicted) delete index[key];
+  await browser.storage.local.remove(evicted.map((key) => CACHE_PREFIX + key));
+  await browser.storage.local.set({ [CACHE_INDEX_KEY]: index });
 }
 
 let syncQueue = Promise.resolve();
@@ -83,7 +93,9 @@ export default defineBackground(() => {
   browser.runtime.onInstalled.addListener(queueSync);
   browser.runtime.onStartup.addListener(queueSync);
   browser.storage.onChanged.addListener((changes, area) => {
-    if (area === 'local' && (SETTINGS_KEY in changes || NATIVE_KEY in changes)) queueSync();
+    if (area !== 'local') return;
+    if (SETTINGS_KEY in changes || NATIVE_KEY in changes) queueSync();
+    if (CACHE_INDEX_KEY in changes) void evictCache((changes[CACHE_INDEX_KEY]!.newValue ?? {}) as CacheIndex);
   });
 
   browser.runtime.onMessage.addListener((message: FetchCssRequest, sender, sendResponse) => {
