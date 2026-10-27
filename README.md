@@ -1,5 +1,7 @@
 # Sombre
 
+[![CI](https://github.com/juliencastera/sombre/actions/workflows/ci.yml/badge.svg)](https://github.com/juliencastera/sombre/actions/workflows/ci.yml)
+
 Dark mode for every website: no white flash, guaranteed text contrast, instant toggle.
 
 Chromium extension (Chrome, Edge, Brave, Arc, Opera, Vivaldi), MV3, English and French.
@@ -12,12 +14,23 @@ npm install
 npm run dev        # WXT dev mode with hot reload
 npm run build      # production build → .output/chrome-mv3
 npm run check      # svelte-check + TypeScript
+npm run lint       # ESLint (npm run format to apply Prettier)
 npm test           # unit tests (Vitest)
 npm run test:e2e   # builds, then end-to-end tests of popup, options, shortcut (Playwright)
 ```
 
 The same actions are available through `make` (`make` alone lists them), for example
-`make verify` before a commit, or `make bench SITES=real HAR=live`.
+`make verify` before a commit (what CI runs on every push and pull request), or
+`make bench SITES=real HAR=live`.
+
+## Releases
+
+Commits follow [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/).
+[release-please](https://github.com/googleapis/release-please) keeps a release pull request
+up to date on `main` (version bump and [CHANGELOG.md](CHANGELOG.md)): `fix:` makes a patch
+release, `feat:` a minor one, a `!` or `BREAKING CHANGE:` a major one. Merging it tags the
+version and publishes a GitHub release with the extension zip for the Chrome Web Store
+attached. Running the *Release* workflow by hand attaches the zip to an existing tag.
 
 ## Try it
 
