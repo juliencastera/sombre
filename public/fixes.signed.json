@@ -1,4 +1,4 @@
 {
-  "payload": "{\"version\":2,\"sites\":{\"mail.google.com\":[{\"selector\":\"img[src*=\\\"logo_gmail_lockup_default\\\"]\",\"action\":\"invert\"},{\"selector\":\".T-I-KE::before\",\"action\":\"invert\"}]}}",
-  "signature": "Kf2YyN08TVQR1y5edsBCjfm7R9u2DGBiGhV7KWBNDpe1QkbhZMlHLZC5rcgVD5epoGryeiXV/X+Q2HZVbgfvCg=="
+  "payload": "{\"version\":3,\"sites\":{\"mail.google.com\":[{\"selector\":\"img[src*=\\\"logo_gmail_lockup_default\\\"]\",\"action\":\"invert\"}]}}",
+  "signature": "AiHU2D1OZN3RVnoppCjWs84YNkkq6f/s26nG3UCPKyxwNMun127RkKQrA0ORlY2PuxFnYxGRWr49A9oDcmThCQ=="
 }
