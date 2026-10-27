@@ -77,7 +77,11 @@ The popup states this and offers "Use Sombre's engine instead" (the site's Dark 
      elements. Fixes are removed, re-measured and re-applied in the same task, so no
      frame shows an unfixed color. Backgrounds behind images, gradients, filters or
      blend modes are not judged.
-  Floors: body text at the level's target, large text (≥ 24px, or ≥ 18.66px bold) 15 less.
+  Floors, after APCA's font lookup in simplified form: the level's target holds for 16px
+  regular text; large text (≥ 24px, or ≥ 18.66px bold) 15 less; small text (under 16px, or
+  under 14px semi-bold) 5 more; tiny text (under 13px) 10 more; a thin weight (< 400) counts
+  as one step smaller; never above Lc 100. Revised after Gmail (14px rows) read poorly in
+  Soft: the bumps stay small so titles keep standing above grey secondary text.
 - **User setting:** contrast level, global only (no per-site override in v1):
 
   | Level | APCA target |
@@ -88,10 +92,12 @@ The popup states this and offers "Use Sombre's engine instead" (the site's Dark 
 
   Replaces Dark Reader's brightness/contrast/sepia/grayscale sliders.
 - **Roles:** a color is transformed according to its use — background, text, border,
-  shadow. Light backgrounds map into a narrow dark band (white → L 0.20), already-dark
-  backgrounds stay dark; dark and mid-grey text maps into a compressed light band
-  calibrated with APCA against the page background (#222 → Lc 81, #999 → Lc 56); light
-  text on colored surfaces stays light.
+  shadow. Light backgrounds map into a narrow dark band (white → L 0.20), steeper near
+  white so close surfaces (read/unread rows, hover, zebra stripes) stay apart (#f2f6fc
+  lands 0.025 above white instead of 0.012); already-dark backgrounds stay dark; dark and
+  mid-grey text maps into a compressed light band calibrated with APCA against the page
+  background (Standard: #1f1f1f → Lc 89, #5f6368 → Lc 78; Soft: 81 and 68); light text on
+  colored surfaces stays light.
 - Implementation: in-house OKLCH + APCA (~200 LOC), no color library in the content script.
 - CSS parsing: native parser (`new CSSStyleSheet().replaceSync(text)` → walk `cssRules`).
 

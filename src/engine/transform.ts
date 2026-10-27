@@ -4,9 +4,9 @@ import { CONTRAST_TARGETS, type ContrastLevel } from '../shared/settings.ts';
 
 /** Text lightness band per contrast level: `top - slope × L` for dark and mid-grey source text. */
 const TEXT_CURVES: Record<ContrastLevel, { top: number; slope: number; floor: number }> = {
-  soft: { top: 0.92, slope: 0.32, floor: 0.7 },
-  standard: { top: 0.96, slope: 0.32, floor: 0.72 },
-  high: { top: 0.98, slope: 0.18, floor: 0.82 },
+  soft: { top: 0.94, slope: 0.26, floor: 0.7 },
+  standard: { top: 0.97, slope: 0.22, floor: 0.72 },
+  high: { top: 0.99, slope: 0.14, floor: 0.82 },
 };
 
 let level: ContrastLevel = 'standard';
@@ -64,17 +64,18 @@ export const PAGE_BG_L = 0.2;
 
 /**
  * Lightness mapping per role (spec §3). Light backgrounds are inverted into a
- * narrow dark band; already-dark backgrounds (dark headers, tooltips) stay
- * dark, slightly below the page so they keep standing out. Dark and mid-grey
- * text is inverted into a compressed light band calibrated with APCA against
- * the page background (standard level: #222 → Lc 81, #999 → Lc 56); light
- * text (on colored buttons, dark banners) is kept light. Text that still
- * falls under the level's floor is lifted by the contrast passes.
+ * narrow dark band, steeper near white so that close surfaces (read and unread
+ * rows, hover, zebra stripes) stay apart; already-dark backgrounds (dark
+ * headers, tooltips) stay dark, slightly below the page so they keep standing
+ * out. Dark and mid-grey text is inverted into a compressed light band
+ * calibrated with APCA against the page background (standard level: #1f1f1f →
+ * Lc 89, #5f6368 → Lc 78); light text (on colored buttons, dark banners) is
+ * kept light. Text that still falls under its floor is lifted by the contrast passes.
  */
 function mapLightness(l: number, role: Role): number {
   switch (role) {
     case 'bg':
-      return l >= 0.5 ? PAGE_BG_L + (1 - l) * 0.44 : 0.12 + l * 0.16;
+      return l >= 0.5 ? PAGE_BG_L + 0.22 * ((1 - l) / 0.5) ** 0.75 : 0.12 + l * 0.16;
     case 'fg': {
       const { top, slope, floor } = TEXT_CURVES[level];
       return l < 0.75 ? top - l * slope : Math.max(l, floor);

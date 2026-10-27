@@ -124,9 +124,9 @@ export default defineUnlistedScript(async () => {
   if (verdict?.marker && startsOn) engine.applyRememberedMarker(verdict.marker);
 
   // Stale-while-revalidate: mirrors of known stylesheets without waiting for the network.
-  const extensionVersion = browser.runtime.getManifest().version;
+  const buildVersion = `${browser.runtime.getManifest().version}+${__SOMBRE_BUILD__}`;
   const cached = stored[cacheKey] as CacheEntry | undefined;
-  if (cached?.version === cacheVersion(extensionVersion, settings.contrast, Boolean(verdict))) {
+  if (cached?.version === cacheVersion(buildVersion, settings.contrast, Boolean(verdict))) {
     engine.seedCache(cached.sheets);
   }
 
@@ -178,7 +178,7 @@ export default defineUnlistedScript(async () => {
       requestIdleCallback(
         () => {
           const sheets = engine.cachedSheets();
-          const version = cacheVersion(extensionVersion, settings.contrast, engine.native);
+          const version = cacheVersion(buildVersion, settings.contrast, engine.native);
           if (Object.keys(sheets).length) void writeCache(key, version, sheets, cached);
         },
         { timeout: 5000 },

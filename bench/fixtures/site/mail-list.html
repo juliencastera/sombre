@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Fixture — mail list</title>
+    <link rel="stylesheet" href="common.css" />
+    <!-- Gmail's inbox colors and sizes: 14px rows, grey snippets, read rows on a faint blue-grey. -->
+    <style>
+      body {
+        font: 14px/20px Roboto, Arial, sans-serif;
+        color: #1f1f1f;
+      }
+      .inbox {
+        border-collapse: collapse;
+        width: 100%;
+      }
+      .inbox td {
+        padding: 8px 12px;
+        border-bottom: 1px solid #eceff1;
+        white-space: nowrap;
+      }
+      .inbox tr {
+        background: #ffffff;
+      }
+      .inbox tr.read {
+        background: #f2f6fc;
+      }
+      .inbox tr.unread .sender,
+      .inbox tr.unread .subject,
+      .inbox tr.unread .time {
+        font-weight: 700;
+      }
+      .snippet,
+      .read .time {
+        color: #5f6368;
+      }
+      .time {
+        font-size: 12px;
+        text-align: right;
+      }
+    </style>
+  </head>
+  <body>
+    <table class="inbox">
+      <tr class="unread">
+        <td class="sender">Build bot</td>
+        <td><span class="subject">Nightly build failed</span> <span class="snippet">- 3 tests failed on main, see the attached log for details</span></td>
+        <td class="time">12:58</td>
+      </tr>
+      <tr class="read">
+        <td class="sender">Alice Martin</td>
+        <td><span class="subject">Meeting notes</span> <span class="snippet">- Thanks everyone, here are the notes from this morning</span></td>
+        <td class="time">12:12</td>
+      </tr>
+      <tr class="unread">
+        <td class="sender">Tracker</td>
+        <td><span class="subject">You were assigned TICKET-42</span> <span class="snippet">- Search block shows a frozen calendar on mobile</span></td>
+        <td class="time">11:55</td>
+      </tr>
+      <tr class="read">
+        <td class="sender">Bob, Carol 3</td>
+        <td><span class="subject">Re: Access request</span> <span class="snippet">- Done, both servers can now reach the read-only replica</span></td>
+        <td class="time">10:40</td>
+      </tr>
+    </table>
+  </body>
+</html>

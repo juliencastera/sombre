@@ -2,13 +2,23 @@ import { apcaContrast } from '../shared/color/apca.ts';
 import { oklchToRgb, perceivedLightness, rgbToOklch } from '../shared/color/oklab.ts';
 import type { Rgb } from '../shared/color/types.ts';
 
+/** Extra |Lc| for small, then tiny text. */
+const SMALL_TEXT_BOOST = [0, 5, 10];
+
 /**
- * APCA floor for a piece of text. Large text (≥ 24px, or ≥ 18.66px bold) reads
- * fine with 15 less, following APCA's font-size lookup in simplified form.
+ * APCA floor for a piece of text, following APCA's font lookup in simplified
+ * form: the level's target holds for 16px regular text. Large text (≥ 24px, or
+ * ≥ 18.66px bold) reads fine with 15 less; small text (under 16px, or under
+ * 14px when semi-bold) needs 5 more, tiny text (under 13px) 10 more. A thin
+ * weight counts as one step smaller: thin glyphs render fainter than their color.
+ * Capped at Lc 100, about what white text on the dark page reaches.
  */
 export function requiredLc(target: number, fontSizePx: number, fontWeight: number): number {
   const large = fontSizePx >= 24 || (fontSizePx >= 18.66 && fontWeight >= 700);
-  return large ? target - 15 : target;
+  if (large) return target - 15;
+  let step = fontSizePx < 13 ? 2 : fontSizePx < 14 || (fontSizePx < 16 && fontWeight < 600) ? 1 : 0;
+  if (fontWeight < 400) step = Math.min(step + 1, 2);
+  return Math.min(target + SMALL_TEXT_BOOST[step]!, 100);
 }
 
 /**

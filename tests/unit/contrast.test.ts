@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { apcaContrast } from '../../src/shared/color/apca.ts';
 import { rgbToOklch } from '../../src/shared/color/oklab.ts';
-import { parseColor } from '../../src/shared/color/parse.ts';
+import { formatColor, parseColor } from '../../src/shared/color/parse.ts';
 import type { Rgb } from '../../src/shared/color/types.ts';
 import { fixTextColor, requiredLc } from '../../src/engine/contrast-math.ts';
 import { contrastTarget, setContrastLevel, transformColor } from '../../src/engine/transform.ts';
@@ -18,6 +18,42 @@ describe('requiredLc', () => {
     expect(requiredLc(75, 24, 400)).toBe(60);
     expect(requiredLc(75, 19, 700)).toBe(60);
     expect(requiredLc(75, 19, 400)).toBe(75);
+  });
+
+  it('raises the floor for small, tiny and thin text', () => {
+    expect(requiredLc(60, 14, 400)).toBe(65);
+    expect(requiredLc(60, 14, 700)).toBe(60);
+    expect(requiredLc(60, 13, 700)).toBe(65);
+    expect(requiredLc(60, 12, 400)).toBe(70);
+    expect(requiredLc(60, 16, 300)).toBe(65);
+    expect(requiredLc(60, 14, 300)).toBe(70);
+  });
+});
+
+describe('a mail list (Gmail colors, 14px)', () => {
+  const page = '#ffffff';
+  const readRow = '#f2f6fc';
+  const map = (value: string, role: 'bg' | 'fg') => transformColor({ ...rgb(value), a: 1 }, role);
+
+  it('keeps read and unread rows apart', () => {
+    const delta = rgbToOklch(map(readRow, 'bg')).l - rgbToOklch(map(page, 'bg')).l;
+    expect(delta).toBeGreaterThan(0.02);
+  });
+
+  it.each(['soft', 'standard', 'high'] as const)('makes grey snippets readable at the %s level', (level) => {
+    setContrastLevel(level);
+    const background = map(readRow, 'bg');
+    const required = requiredLc(contrastTarget(), 14, 400);
+    const snippet = map('#5f6368', 'fg');
+    const fixed = fixTextColor(snippet, background, required) ?? snippet;
+    const hex = formatColor({ ...background, a: 1 });
+    expect(lc(fixed, hex)).toBeGreaterThanOrEqual(required);
+    // The hierarchy survives: titles stay brighter than snippets (High trades it for contrast).
+    if (level !== 'high') expect(lc(map('#1f1f1f', 'fg'), hex)).toBeGreaterThan(lc(fixed, hex) + 5);
+  });
+
+  it('never asks for more than white text can give', () => {
+    expect(requiredLc(90, 11, 300)).toBe(100);
   });
 });
 

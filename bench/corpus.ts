@@ -38,6 +38,7 @@ export const CORPUS: Site[] = [
   fixture('heavy'),
   fixture('legacy-attributes'),
   fixture('utility-css'),
+  fixture('mail-list'),
 
   { id: 'gmail', url: 'https://mail.google.com/mail/u/0/#inbox', kind: 'native-dark', auth: true },
   { id: 'notion', url: 'https://www.notion.so/', kind: 'native-dark', auth: true },

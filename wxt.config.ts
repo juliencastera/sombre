@@ -18,6 +18,9 @@ export default defineConfig({
       },
     },
   },
+  // Cached stylesheet mirrors are only valid for the build that generated them,
+  // even when the version number does not change (local builds).
+  vite: () => ({ define: { __SOMBRE_BUILD__: JSON.stringify(Date.now().toString(36)) } }),
   hooks: {
     'build:manifestGenerated': (_, manifest) => {
       // The engine is an unlisted script (src/entrypoints/sombre.ts) to avoid WXT's content script runtime.
