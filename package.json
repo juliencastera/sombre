@@ -1,7 +1,7 @@
 {
   "name": "sombre",
   "description": "Dark mode for every website: no white flash, guaranteed text contrast, instant toggle.",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
   "license": "MIT",
