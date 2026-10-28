@@ -1,5 +1,6 @@
+import { rgbToOklch } from '../shared/color/oklab.ts';
 import { formatColor, parseColor } from '../shared/color/parse.ts';
-import { declarations, type GenerateOptions } from './generate.ts';
+import { ART_PROPERTIES, declarations, type GenerateOptions } from './generate.ts';
 import { resolveColorInBrowser } from './resolve-color.ts';
 import { transformColor, type Role } from './transform.ts';
 
@@ -19,6 +20,33 @@ export const ATTRIBUTE_SELECTOR = `[style],${PRESENTATIONAL.map(({ tag, attribut
 
 /** Cheap pre-filter: skip inline styles that cannot contain a color. */
 const COLOR_HINT = /color|background|border|fill|stroke|shadow|outline|--/i;
+
+/** Set on an `<svg>` drawn on its own colored backdrop: its paints stay as drawn (see markArtwork). */
+const ART_ATTR = 'data-sombre-art';
+/** Excludes the inside of such artwork from the rules below. */
+const OUTSIDE_ART = `:not([${ART_ATTR}] *)`;
+
+/**
+ * Logos drawn on their own colored backdrop (lpo.fr's blue badge with white and
+ * black birds) read on any page: their first opaque shape is a vivid color and
+ * white is painted over it. Their colors stay as drawn. An illustration or a
+ * chart whose first shape is a white background is still darkened.
+ */
+function markArtwork(svg: SVGSVGElement): void {
+  let backdrop = false;
+  for (const shape of svg.querySelectorAll('[fill],[style]')) {
+    const color = parseColor((shape as SVGElement).style.fill || shape.getAttribute('fill') || '');
+    if (!color || color.a < 1) continue;
+    const { l, c } = rgbToOklch(color);
+    if (!backdrop) {
+      if (c < 0.06) return;
+      backdrop = true;
+    } else if (l > 0.97 && c < 0.02) {
+      svg.setAttribute(ART_ATTR, '');
+      return;
+    }
+  }
+}
 
 /** HTML accepts colors without the leading `#` in legacy attributes. */
 function parseLegacyColor(value: string) {
@@ -57,6 +85,7 @@ function splitDeclarations(text: string): string[] {
 export class AttributeStyles {
   readonly sheet: CSSStyleSheet;
   readonly #seen = new Set<string>();
+  readonly #artwork = new WeakSet<SVGSVGElement>();
   readonly #scratch = document.createElement('div');
   readonly #options: GenerateOptions;
   readonly #wrap: (rule: string) => string;
@@ -80,6 +109,12 @@ export class AttributeStyles {
   }
 
   process(el: Element): void {
+    // Classified once, before any of its rules exists.
+    const svg = el instanceof SVGElement ? el.closest('svg') : null;
+    if (svg && !this.#artwork.has(svg)) {
+      this.#artwork.add(svg);
+      markArtwork(svg);
+    }
     const style = el.getAttribute('style');
     if (style && COLOR_HINT.test(style)) this.#processStyle(style);
     for (const { tag, attribute, property, role } of PRESENTATIONAL) {
@@ -92,7 +127,7 @@ export class AttributeStyles {
       if (!color) continue;
       // :where(): like the hint it replaces, any page CSS rule still wins.
       this.#add(
-        `:where(${tag}[${attribute}=${JSON.stringify(value)} i]){${property}:${formatColor(transformColor(color, role))}}`,
+        `:where(${tag}[${attribute}=${JSON.stringify(value)} i]${OUTSIDE_ART}){${property}:${formatColor(transformColor(color, role))}}`,
       );
     }
   }
@@ -105,8 +140,10 @@ export class AttributeStyles {
       if (!raw.trim() || !COLOR_HINT.test(raw) || this.#seen.has(selector)) continue;
       this.#seen.add(selector);
       this.#scratch.style.cssText = raw;
-      const body = declarations(this.#scratch.style, this.#options, true);
-      if (body) this.#add(`${selector}{${body}}`);
+      // Inline paints are SVG artwork too (logos exported with `style="fill:…"`).
+      const paint = ART_PROPERTIES.has(this.#scratch.style[0]!);
+      const body = declarations(this.#scratch.style, { ...this.#options, art: 'ink' }, true);
+      if (body) this.#add(`${selector}${paint ? OUTSIDE_ART : ''}{${body}}`);
     }
   }
 

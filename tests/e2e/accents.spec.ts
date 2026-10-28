@@ -40,4 +40,11 @@ test('vivid bars keep their color and icons follow their color', async ({ contex
   // With its own white-on-color backdrop, the black details sit on the logo: all colors stay.
   expect((await style(page, '.logo-badge .badge-ink')).fill).toBe('rgb(25, 25, 25)');
   expect((await style(page, '.logo-badge .badge-white')).fill).toBe('rgb(255, 255, 255)');
+
+  // The same with inline styles: the badge logo stays as drawn, the wordmark's ink turns light.
+  expect((await style(page, '.inline-badge .ink')).fill).toBe('rgb(25, 25, 25)');
+  expect((await style(page, '.inline-mark .brand')).fill).toBe('rgb(0, 135, 205)');
+  expect(oklch((await style(page, '.inline-mark .ink')).fill).l).toBeGreaterThan(0.85);
+  // A chart's white plot background is still a background.
+  expect(oklch((await style(page, '.chart .plot')).fill).l).toBeLessThan(0.4);
 });

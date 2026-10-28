@@ -18,7 +18,7 @@ export interface GenerateOptions extends RewriteOptions {
 }
 
 /** Paint properties of SVG artwork, whose colors are drawings rather than text. */
-const ART_PROPERTIES = new Set(['fill', 'stroke', 'stop-color', 'flood-color']);
+export const ART_PROPERTIES = new Set(['fill', 'stroke', 'stop-color', 'flood-color']);
 
 /**
  * How to treat an SVG's own stylesheet. Artwork that paints white next to a vivid
