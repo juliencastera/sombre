@@ -298,7 +298,7 @@ As built in M6:
 | Manifest | MV3 |
 | Language | TypeScript (strict) |
 | Extension framework / build | WXT (Vite) |
-| Content script | Vanilla TS, zero dependencies, built as a WXT unlisted script declared in the manifest (no WXT content script runtime). Budget < 38 KB minified, enforced by an E2E test (37.9 KB with frame schemes, the canvas check and blended pictures; revised from 30 KB, then 34 KB, then 37 KB, as contrast passes, native themes, cache, fixes, image analysis and frame schemes landed). Chrome code-caches extension scripts, so the remaining cost is negligible. The element picker is a separate script injected on demand |
+| Content script | Vanilla TS, zero dependencies, built as a WXT unlisted script declared in the manifest (no WXT content script runtime). Budget < 40 KB minified, enforced by an E2E test (38.1 KB with frame schemes, the canvas check, blended pictures and SVG artwork; revised from 30 KB, then 34 KB, 37 KB and 38 KB, as contrast passes, native themes, cache, fixes, image analysis, frame schemes and site-compatibility fixes landed). Chrome code-caches extension scripts, so the remaining cost is negligible. The element picker is a separate script injected on demand |
 | Popup / options | Svelte 5 |
 | Unit tests | Vitest (color math, APCA, rule rewriting) |
 | E2E / benchmark | Playwright with extension loaded |
