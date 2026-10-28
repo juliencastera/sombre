@@ -91,6 +91,27 @@ describe('transformColor', () => {
     expect(L('rgba(0, 0, 0, 0.5)', 'bg')).toBeLessThan(PAGE_BG_L);
   });
 
+  it('turns faint dark tinted overlays into light tints of their hue', () => {
+    // Vaadin Lumo's --lumo-contrast-10pct, used for grid lines (Alibeez timesheet).
+    const line = transformColor(rgba('hsla(214, 57%, 24%, 0.1)'), 'border');
+    expect(line.a).toBe(0.1);
+    const { l, c, h } = rgbToOklch(line);
+    expect(l).toBeGreaterThan(0.9);
+    expect(c).toBeGreaterThan(0.02);
+    expect(Math.abs(h - rgbToOklch(rgba('hsl(214, 57%, 24%)')).h)).toBeLessThan(10);
+    // Vivid faint tints (Lumo's error-color-10pct) stay tints of their color.
+    expect(rgbToOklch(transformColor(rgba('hsla(3, 85%, 49%, 0.1)'), 'bg')).c).toBeGreaterThan(0.1);
+  });
+
+  it('keeps colored glows and focus rings vivid', () => {
+    // Alibeez: `box-shadow: inset 0 0 2px #08A8C5` outlines each day cell.
+    expect(L('#08a8c5', 'shadow')).toBeGreaterThan(0.55);
+    expect(rgbToOklch(transformColor(rgba('#08a8c5'), 'shadow')).c).toBeGreaterThan(0.08);
+    // Plain drop shadows stay dark.
+    expect(L('rgba(0, 0, 0, 0.2)', 'shadow')).toBeLessThan(0.05);
+    expect(L('#cccccc', 'shadow')).toBeLessThan(0.2);
+  });
+
   it('darkens pastel tints like surfaces, keeping the tint visible', () => {
     expect(L('#fef08a', 'bg')).toBeLessThan(0.35);
     const mint = rgbToOklch(transformColor(rgba('#ecfdf5'), 'bg'));

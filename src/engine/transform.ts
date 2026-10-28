@@ -97,26 +97,36 @@ const ACCENT_PASTEL_L = 0.88;
 const ACCENT_MAX_L = 0.6;
 
 /**
- * Vivid fills and borders (accord bars, badges, colored and outlined buttons,
- * rating bars) carry meaning through their color: darkening them like page
- * surfaces turns them into near-black browns and maroons. They keep their hue
- * and most of their chroma, capped in lightness so the text on them stays readable.
+ * Vivid fills, borders and glows (accord bars, badges, colored and outlined
+ * buttons, rating bars, focus rings) carry meaning through their color:
+ * darkening them like page surfaces or drop shadows turns them into near-black
+ * browns and maroons. They keep their hue and most of their chroma, capped in
+ * lightness so the text on them stays readable.
  */
 function isAccent(l: number, c: number, role: Role): boolean {
-  const surface = role === 'bg' || role === 'border' || (role === 'invert' && l >= 0.5);
-  return surface && c >= ACCENT_MIN_CHROMA && l <= ACCENT_PASTEL_L;
+  const colored = role === 'bg' || role === 'border' || role === 'shadow' || (role === 'invert' && l >= 0.5);
+  return colored && c >= ACCENT_MIN_CHROMA && l <= ACCENT_PASTEL_L;
 }
 
 /** Most opacity of a neutral fill or border still read as an overlay rather than a surface. */
 const OVERLAY_MAX_ALPHA = 0.16;
+/** Most chroma a lightened overlay keeps. */
+const OVERLAY_MAX_CHROMA = 0.04;
 
 /**
- * Faint neutral overlays (hover tints, glassy buttons, hairlines) shade
- * whatever is below them. On a dark page they must lighten to show, so they
- * become white at the same opacity; on a site's own dark theme they are left alone.
+ * Faint overlays (hover tints, glassy buttons, hairlines) shade whatever is
+ * below them. On a dark page they must lighten to show, so they become white,
+ * or a light tint of their hue, at the same opacity; on a site's own dark theme
+ * they are left alone. Dark tinted ones count too: Vaadin's Lumo draws its grid
+ * lines and fills with a navy at 5–16 % opacity, which reads as grey on white.
  */
-function isOverlay(alpha: number, c: number, role: Role): boolean {
-  return (role === 'bg' || role === 'border') && alpha > 0 && alpha <= OVERLAY_MAX_ALPHA && c < 0.02;
+function isOverlay(alpha: number, l: number, c: number, role: Role): boolean {
+  return (role === 'bg' || role === 'border') && alpha > 0 && alpha <= OVERLAY_MAX_ALPHA && (c < 0.02 || l < 0.5);
+}
+
+function lightOverlay(alpha: number, c: number, h: number): Rgba {
+  if (c < 0.02) return { r: 255, g: 255, b: 255, a: alpha };
+  return { ...oklchToRgb({ l: 0.92, c: Math.min(c, OVERLAY_MAX_CHROMA), h }), a: alpha };
 }
 
 /** Saturated colors look louder on dark backgrounds; tone chroma down a little. */
@@ -151,9 +161,9 @@ export function transformColor(color: Rgba, role: Role): Rgba {
 /** The dark counterpart of `color`, or null to leave it as is. */
 function transform(color: Rgba, role: Role): Rgba | null {
   const { l, c, h } = rgbToOklch(color);
-  const overlay = isOverlay(color.a, c, role);
+  const overlay = isOverlay(color.a, l, c, role);
   if (preserveDark && (overlay || preserved(l, role))) return null;
-  if (overlay) return { r: 255, g: 255, b: 255, a: color.a };
+  if (overlay) return lightOverlay(color.a, c, h);
   if (isAccent(l, c, role)) return { ...oklchToRgb({ l: Math.min(l, ACCENT_MAX_L), c: c * 0.9, h }), a: color.a };
   return { ...oklchToRgb({ l: mapLightness(l, role), c: mapChroma(l, c, role), h }), a: color.a };
 }
