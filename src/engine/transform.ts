@@ -37,7 +37,7 @@ export function setPreserveDark(next: boolean): void {
 
 /** Roles whose colors stay untouched in preserve mode, by source lightness. */
 function preserved(l: number, role: Role): boolean {
-  if (role === 'fg') return l >= 0.5;
+  if (role === 'fg' || role === 'art') return l >= 0.5;
   if (role === 'invert') return true;
   return l < 0.5;
 }
@@ -51,11 +51,13 @@ export function contrastTarget(): number {
  * How a color is used decides how it is darkened: a white background must
  * become dark, while white text must stay light.
  */
-export type Role = 'bg' | 'fg' | 'border' | 'shadow' | 'invert';
+export type Role = 'bg' | 'fg' | 'border' | 'shadow' | 'invert' | 'art';
 
 /**
  * Roles a custom property can feed (each gets a twin). `invert` is reserved for
- * SVG artwork attributes, where a fill can be a shape's background or its ink.
+ * SVG artwork attributes, where a fill can be a shape's background or its ink;
+ * `art` for the paints of an SVG's own stylesheet (logos): vivid colors stay as
+ * drawn, greys and black move into the text band like ink.
  */
 export const ROLES: readonly Role[] = ['bg', 'fg', 'border', 'shadow'];
 
@@ -76,7 +78,8 @@ function mapLightness(l: number, role: Role): number {
   switch (role) {
     case 'bg':
       return l >= 0.5 ? PAGE_BG_L + 0.22 * ((1 - l) / 0.5) ** 0.75 : 0.12 + l * 0.16;
-    case 'fg': {
+    case 'fg':
+    case 'art': {
       const { top, slope, floor } = TEXT_CURVES[level];
       return l < 0.75 ? top - l * slope : Math.max(l, floor);
     }
@@ -130,7 +133,7 @@ function lightOverlay(alpha: number, c: number, h: number): Rgba {
 }
 
 /** Saturated colors look louder on dark backgrounds; tone chroma down a little. */
-const CHROMA_SCALE: Record<Role, number> = { bg: 0.8, fg: 0.95, border: 0.8, shadow: 1, invert: 0.9 };
+const CHROMA_SCALE: Record<Role, number> = { bg: 0.8, fg: 0.95, border: 0.8, shadow: 1, invert: 0.9, art: 0.95 };
 /** Most chroma a light tint gets once darkened. */
 const TINT_MAX_CHROMA = 0.05;
 
@@ -164,6 +167,8 @@ function transform(color: Rgba, role: Role): Rgba | null {
   const overlay = isOverlay(color.a, l, c, role);
   if (preserveDark && (overlay || preserved(l, role))) return null;
   if (overlay) return lightOverlay(color.a, c, h);
+  // A logo's brand colors read on any background: only dark ones are lifted, like ink.
+  if (role === 'art' && c >= ACCENT_MIN_CHROMA && l >= 0.5) return null;
   if (isAccent(l, c, role)) return { ...oklchToRgb({ l: Math.min(l, ACCENT_MAX_L), c: c * 0.9, h }), a: color.a };
   return { ...oklchToRgb({ l: mapLightness(l, role), c: mapChroma(l, c, role), h }), a: color.a };
 }

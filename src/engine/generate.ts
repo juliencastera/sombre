@@ -9,7 +9,12 @@ export interface GenerateOptions extends RewriteOptions {
   resolveImport?: (url: string) => string | null;
   /** Custom property standing for the dark version of a background image (see DarkIcons), or null to leave it. */
   icon?: (url: string) => string | null;
+  /** The sheet belongs to an SVG (a logo or an illustration exported with its `<style>`). */
+  art?: boolean;
 }
+
+/** Paint properties of SVG artwork, whose colors are drawings rather than text. */
+const ART_PROPERTIES = new Set(['fill', 'stroke', 'stop-color', 'flood-color']);
 
 /** A background image that is a single `url()`, with its URL. */
 const SINGLE_URL = /^url\(\s*(['"]?)(.*?)\1\s*\)$/s;
@@ -126,7 +131,12 @@ export function declarations(
       continue;
     }
 
-    const role = masked && property === 'background-color' ? 'fg' : ROLE_BY_PROPERTY[property];
+    const role =
+      masked && property === 'background-color'
+        ? 'fg'
+        : options.art && ART_PROPERTIES.has(property)
+          ? 'art'
+          : ROLE_BY_PROPERTY[property];
     if (!role) continue;
     if (!value) {
       pendingShorthand = true;

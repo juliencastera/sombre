@@ -112,6 +112,16 @@ describe('transformColor', () => {
     expect(L('#cccccc', 'shadow')).toBeLessThan(0.2);
   });
 
+  it('keeps a logo drawn in its own SVG stylesheet as designed', () => {
+    // lpo.fr: `.st1{fill:#0087CD}` badge, `.st2{fill:#FFFFFF}` bird, `.st4{fill:#F55F19}`, `.st3{fill:#191919}` ink.
+    for (const brand of ['#0087cd', '#f55f19', '#ffffff']) {
+      expect(formatColor(transformColor(rgba(brand), 'art'))).toBe(brand);
+    }
+    expect(L('#191919', 'art')).toBeGreaterThan(0.85);
+    // Dark brand colors are lifted like ink, keeping their hue.
+    expect(L('#0a3782', 'art')).toBeGreaterThan(0.75);
+  });
+
   it('darkens pastel tints like surfaces, keeping the tint visible', () => {
     expect(L('#fef08a', 'bg')).toBeLessThan(0.35);
     const mint = rgbToOklch(transformColor(rgba('#ecfdf5'), 'bg'));

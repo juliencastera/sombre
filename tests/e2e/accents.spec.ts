@@ -33,4 +33,8 @@ test('vivid bars keep their color and icons follow their color', async ({ contex
 
   // White text on the green button stays white: a contrast fix never makes it worse.
   expect(oklch((await style(page, '.label')).color).l).toBeGreaterThan(0.9);
+
+  // A logo's own stylesheet: the brand color stays as drawn, its black ink turns light.
+  expect((await style(page, '.logo-art .st1')).fill).toBe('rgb(0, 135, 205)');
+  expect(oklch((await style(page, '.logo-art .st3')).fill).l).toBeGreaterThan(0.85);
 });

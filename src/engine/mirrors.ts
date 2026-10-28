@@ -159,7 +159,7 @@ export class MirrorStore {
 
     const media = source.media?.mediaText;
     let css = rules
-      ? generateRules(rules, { ...this.#options, baseUrl: source.href })
+      ? generateRules(rules, { ...this.#options, baseUrl: source.href, art: source.ownerNode instanceof SVGStyleElement })
       : source.href
         ? (this.#remote.get(source.href) ?? '')
         : '';
