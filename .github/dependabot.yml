@@ -11,6 +11,10 @@ updates:
     commit-message:
       prefix: chore
       include: scope
+    ignore:
+      # @types/node follows the Node major the workflows run (24), not the latest release.
+      - dependency-name: '@types/node'
+        update-types: ['version-update:semver-major']
   - package-ecosystem: github-actions
     directory: /
     schedule:
