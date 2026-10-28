@@ -3,6 +3,7 @@ import type { Fix } from '../shared/fixes.ts';
 import type { ContrastLevel, NativeMarker } from '../shared/settings.ts';
 import { ContrastPass } from './contrast.ts';
 import type { GenerateOptions } from './generate.ts';
+import { askParent, serveFrames, type Scheme } from './frames.ts';
 import { DarkIcons, ICON_CACHE_PREFIX } from './icons.ts';
 import { MirrorStore } from './mirrors.ts';
 import { applyMarker, findNativeMarkers, pageLooksDark } from './native.ts';
@@ -16,6 +17,8 @@ const STATE_ATTR = 'data-sombre';
 const READY_ATTR = 'data-sombre-ready';
 /** Custom property set by the base layer; tells whether it is injected and active on this page. */
 const BASE_MARKER = '--sombre-base';
+/** Set on embedded documents: their canvas stays transparent (see public/base-*.css and frames.ts). */
+const FRAME_ATTR = 'data-sombre-frame';
 
 /** Events dispatched by the MAIN-world hooks (src/entrypoints/main-world.content.ts). */
 export const EVENTS = { sheet: 'sombre:sheet', shadow: 'sombre:shadow', adopted: 'sombre:adopted' } as const;
@@ -28,8 +31,15 @@ const VIEW_TRANSITION_MAX_ELEMENTS = 1500;
 const canvas = () => formatColor(transformColor({ r: 255, g: 255, b: 255, a: 1 }, 'bg'));
 const canvasText = () => formatColor(transformColor({ r: 0, g: 0, b: 0, a: 1 }, 'fg'));
 const border = () => formatColor(transformColor({ r: 221, g: 221, b: 221, a: 1 }, 'border'));
-/** Defaults for pages that style nothing; zero specificity so any mirrored page rule wins. */
-const baseRules = () => `:where(:root){background-color:${canvas()};color:${canvasText()}}:root{color-scheme:dark!important}`;
+/**
+ * Defaults for pages that style nothing; zero specificity so any mirrored page rule wins.
+ * A frame keeps a transparent canvas and its parent's scheme on its root (`frameScheme`);
+ * its content still gets dark form controls.
+ */
+const baseRules = (frameScheme: Scheme | null) =>
+  frameScheme
+    ? `:where(:root){color:${canvasText()}}:root[${FRAME_ATTR}]{color-scheme:${frameScheme}!important}body{color-scheme:dark!important}`
+    : `:where(:root){background-color:${canvas()};color:${canvasText()}}:root{color-scheme:dark!important}`;
 /** Shadow-root counterpart of the base layer's pre-ready guard (the base layer cannot pierce shadow roots). */
 const guardRules = () =>
   `*{background-color:${canvas()}!important;color:${canvasText()}!important;border-color:${border()}!important}`;
@@ -120,10 +130,19 @@ export class Engine {
   /** Elements with a fix: the contrast pass leaves them to the fix. */
   #fixed: string | null = null;
   #renderedOn = false;
+  /** In a frame, the scheme its element uses in the parent page; dark until the parent answers. */
+  #frameScheme: Scheme | null = null;
+  readonly #tellFrames: () => void;
 
   constructor(osDark: () => boolean, onNative: (marker: NativeMarker | null) => void) {
     this.#osDark = osDark;
     this.#onNative = onNative;
+    if (window !== window.top) {
+      // Before first paint: the base layer must not give this frame an opaque canvas.
+      document.documentElement.setAttribute(FRAME_ATTR, '');
+      this.#frameScheme = 'dark';
+    }
+    this.#tellFrames = serveFrames(osDark);
     const options: GenerateOptions = { resolveColor: resolveColorInBrowser, icon: (url) => this.#icons.use(url) };
     this.#store = new MirrorStore(options, () => this.#scheduleAll());
     this.#icons = new DarkIcons(this.#store.create());
@@ -141,10 +160,17 @@ export class Engine {
       schedule: (scope) => this.#schedule(scope),
       discoverShadowRoots: (node) => this.#discoverShadowRoots(node),
       watchText: (node) => this.#contrast.watch(node),
-      baseRules: () => baseRules() + this.#fixRules,
+      baseRules: () => baseRules(this.#frameScheme) + this.#fixRules,
     };
     this.#documentScope = this.#register(new Scope(document, this.#context));
     this.#listen();
+    if (this.#frameScheme) {
+      askParent((scheme) => {
+        if (scheme === this.#frameScheme) return;
+        this.#frameScheme = scheme;
+        this.#documentScope.refreshBase();
+      });
+    }
   }
 
   /** Apply a contrast level; regenerates every mirror when it changes after start. */
@@ -225,6 +251,8 @@ export class Engine {
       this.#store.setDisabled(!active);
       this.#guard.disabled = !active || this.#ready;
       if (this.#marker) applyMarker(this.#marker, this.#on);
+      // This page's scheme may have changed: frames inside must follow it.
+      this.#tellFrames();
     };
     this.#rendered = true;
     this.#renderedOn = this.#on;

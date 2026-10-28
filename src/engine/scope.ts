@@ -68,6 +68,11 @@ export class Scope {
     if (this.#started) this.#attributes.scan(this.root);
   }
 
+  /** The base rules changed alone (a frame learned its parent's scheme). */
+  refreshBase(): void {
+    this.#base?.replaceSync(this.#context.baseRules());
+  }
+
   /** Adopt the pre-ready guard right away, before the page fills this shadow root. */
   adoptGuard(): void {
     const sheets = this.root.adoptedStyleSheets;

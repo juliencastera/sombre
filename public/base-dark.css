@@ -10,8 +10,12 @@
 }
 
 :where(:root:not([data-sombre="off"])) {
-  background-color: #161616;
   color: #f2f2f2;
+}
+
+/* Frames keep a transparent canvas: overlays over a video or a page must stay see-through. */
+:where(:root:not([data-sombre="off"]):not([data-sombre-frame])) {
+  background-color: #161616;
 }
 
 /* Until the engine has generated the precise theme, nothing may paint light. */

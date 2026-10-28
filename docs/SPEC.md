@@ -27,8 +27,8 @@ between navigations.
 ## 2. Rendering architecture (3 layers + native)
 
 1. **Instant base layer** — static CSS (`public/base-dark.css`, `public/base-auto.css`)
-   injected by the browser before first paint: `color-scheme: dark`, dark canvas and
-   text, and a "nothing paints light" guard (every element forced dark) until the
+   injected by the browser before first paint: `color-scheme: dark`, dark canvas (top
+   page only: frames stay transparent, see §6) and text, and a "nothing paints light" guard (every element forced dark) until the
    engine marks the page ready (`data-sombre-ready`). Guarantees no white frame even
    before any JS runs. Registered **dynamically** (`chrome.scripting.registerContentScripts`)
    rather than in the manifest, so the browser only injects it where dark mode applies:
@@ -173,7 +173,7 @@ The popup states this and offers "Use Sombre's engine instead" (the site's Dark 
 | CSS-in-JS via `insertRule` (styled-components, emotion) | MAIN-world script patching `CSSStyleSheet.prototype.insertRule` / `replace(Sync)` |
 | Open Shadow DOM | Patch `attachShadow`; each shadow root is a scope adopting its own mirrors (sources shared between roots share one mirror), plus a pre-ready guard sheet since the base layer cannot pierce shadow boundaries |
 | Utility CSS (Tailwind v3 `rgb(… / var(--tw-bg-opacity))`, shadcn/ui `hsl(var(--background))`) | Channels transformed, alpha expressions kept; channel variables get per-role twins in the same channel format |
-| Same-origin iframes | `all_frames: true` |
+| Iframes | `all_frames: true`. A frame keeps a transparent canvas (`data-sombre-frame` on its root, no base background), so overlays drawn over a video or a page stay see-through. The browser paints a frame opaque when its root's `color-scheme` differs from its `<iframe>` element's, so each frame asks its parent's content script (`postMessage`) for that element's scheme and takes it on its root, keeping `dark` on `<body>` for form controls; the parent tells the frames that asked again after a toggle |
 | Legacy color attributes (`bgcolor`, `<font color>`, `<body text>`) | Per-value `:where([bgcolor="…" i])` rules (zero specificity, like the presentational hints they replace) |
 | Dark icons on transparent backgrounds (CSS `background-image: url()`) | As in Dark Reader: each image is fetched (by the background when cross-origin) and sampled on a 32×32 canvas; ≥ 70 % dark opaque pixels, ≥ 10 % transparent pixels and < 480 000 natural pixels → an inverted copy (SVG stays vector, with a root `filter`; rasters are redrawn through `ctx.filter`). Mirrors write `var(--sombre-icon-<hash>, url(original))` and the property is only defined on `:root` once the verdict is "invert", so a result never regenerates a mirror; verdicts go into the per-site cache. JPEGs and images over 512 KB are skipped |
 | Icons drawn with `mask-image` | The rule's `background-color` is the icon's ink: transformed as text, not as a surface |
@@ -295,7 +295,7 @@ As built in M6:
 | Manifest | MV3 |
 | Language | TypeScript (strict) |
 | Extension framework / build | WXT (Vite) |
-| Content script | Vanilla TS, zero dependencies, built as a WXT unlisted script declared in the manifest (no WXT content script runtime). Budget < 37 KB minified, enforced by an E2E test (36.6 KB with dark icons; revised from 30 KB, then 34 KB, as contrast passes, native themes, cache, fixes and image analysis landed). Chrome code-caches extension scripts, so the remaining cost is negligible. The element picker is a separate script injected on demand |
+| Content script | Vanilla TS, zero dependencies, built as a WXT unlisted script declared in the manifest (no WXT content script runtime). Budget < 38 KB minified, enforced by an E2E test (37.3 KB with frame schemes; revised from 30 KB, then 34 KB, then 37 KB, as contrast passes, native themes, cache, fixes, image analysis and frame schemes landed). Chrome code-caches extension scripts, so the remaining cost is negligible. The element picker is a separate script injected on demand |
 | Popup / options | Svelte 5 |
 | Unit tests | Vitest (color math, APCA, rule rewriting) |
 | E2E / benchmark | Playwright with extension loaded |

@@ -10,8 +10,11 @@
   }
 
   :where(:root:not([data-sombre="off"])) {
-    background-color: #161616;
     color: #f2f2f2;
+  }
+
+  :where(:root:not([data-sombre="off"]):not([data-sombre-frame])) {
+    background-color: #161616;
   }
 
   :root:not([data-sombre="off"]):not([data-sombre-ready]),
