@@ -10,7 +10,6 @@
 export type Scheme = 'light' | 'dark';
 
 const ASK = 'sombre:scheme?';
-const TELL = 'sombre:scheme';
 
 /** The scheme an element is rendered with, from its computed `color-scheme`. */
 export function usedScheme(value: string, osDark: boolean): Scheme {
@@ -25,29 +24,36 @@ const frameElements = () => [...document.querySelectorAll<HTMLIFrameElement | HT
  * that tells every frame that asked again, after this page's scheme changed.
  */
 export function serveFrames(osDark: () => boolean): () => void {
-  const asked = new WeakSet<Window>();
-  const tell = (frame: HTMLIFrameElement | HTMLFrameElement) => {
-    const scheme = usedScheme(getComputedStyle(frame).colorScheme, osDark());
-    frame.contentWindow?.postMessage({ type: TELL, scheme }, '*');
-  };
+  /** The port each frame sent with its question; every answer goes through it. */
+  const asked = new WeakMap<Window, MessagePort>();
+  const tell = (frame: HTMLIFrameElement | HTMLFrameElement, port: MessagePort) =>
+    port.postMessage(usedScheme(getComputedStyle(frame).colorScheme, osDark()));
   addEventListener('message', (event) => {
-    if ((event.data as { type?: unknown } | null)?.type !== ASK) return;
+    const port = event.ports[0];
+    if ((event.data as { type?: unknown } | null)?.type !== ASK || !port) return;
     const frame = frameElements().find((el) => el.contentWindow === event.source);
     if (!frame?.contentWindow) return;
-    asked.add(frame.contentWindow);
-    tell(frame);
+    asked.set(frame.contentWindow, port);
+    tell(frame, port);
   });
   return () => {
-    for (const frame of frameElements()) if (frame.contentWindow && asked.has(frame.contentWindow)) tell(frame);
+    for (const frame of frameElements()) {
+      const port = frame.contentWindow && asked.get(frame.contentWindow);
+      if (port) tell(frame, port);
+    }
   };
 }
 
-/** In a frame: ask the parent which scheme our element uses; `onScheme` gets every answer. */
+/**
+ * In a frame: ask the parent which scheme our element uses; `onScheme` gets every answer.
+ * Answers come through a private port: pages that relay messages between their parent
+ * and their own frames (Twitch's extension supervisor) would otherwise hand a frame
+ * the answer meant for its parent.
+ */
 export function askParent(onScheme: (scheme: Scheme) => void): void {
-  addEventListener('message', (event) => {
-    if (event.source !== parent) return;
-    const data = event.data as { type?: unknown; scheme?: unknown } | null;
-    if (data?.type === TELL && (data.scheme === 'light' || data.scheme === 'dark')) onScheme(data.scheme);
-  });
-  parent.postMessage({ type: ASK }, '*');
+  const { port1, port2 } = new MessageChannel();
+  port1.onmessage = (event) => {
+    if (event.data === 'light' || event.data === 'dark') onScheme(event.data);
+  };
+  parent.postMessage({ type: ASK }, '*', [port2]);
 }

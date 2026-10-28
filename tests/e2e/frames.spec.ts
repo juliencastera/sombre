@@ -6,6 +6,8 @@ import { expect, fixture, sombreState, test } from './fixtures.ts';
 
 /** Embedded documents: a transparent frame must stay transparent, whether Sombre themes its parent or not. */
 
+/** The overlay is hosted by a relay frame that forwards messages, as Twitch's extension supervisor does. */
+const relay = (page: Page) => page.frame({ url: /relay-frame\.html$/ })!;
 const overlay = (page: Page) => page.frame({ url: /overlay-frame\.html$/ })!;
 
 const frameReady = (frame: Frame) => frame.evaluate(() => document.documentElement.hasAttribute('data-sombre-ready'));
@@ -41,11 +43,13 @@ test('a transparent overlay frame stays see-through', async ({ context, pressSho
   await expect.poll(() => frameReady(overlay(page))).toBe(true);
   await expectSeeThrough(page);
 
-  // Sombre left off on the page (as on a site with its own dark theme) but on in the frame:
-  // the frame takes its parent's light scheme, or the browser paints its canvas opaque.
+  // Sombre left off on the page (as on a site with its own dark theme) but on in the frames:
+  // each frame takes its own element's scheme, or the browser paints its canvas opaque.
+  // The relay must not hand the overlay the answer meant for itself.
   await pressShortcut();
   await expect.poll(() => sombreState(page)).toBe('off');
-  await expect.poll(() => rootScheme(overlay(page))).toBe('light');
+  await expect.poll(() => rootScheme(relay(page))).toBe('light');
+  expect(await rootScheme(overlay(page))).toBe('dark');
   await expectSeeThrough(page);
 });
 

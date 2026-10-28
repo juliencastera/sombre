@@ -169,6 +169,7 @@ export class Engine {
         if (scheme === this.#frameScheme) return;
         this.#frameScheme = scheme;
         this.#documentScope.refreshBase();
+        this.#tellFrames();
       });
     }
   }
