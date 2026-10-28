@@ -13,8 +13,11 @@
   color: #f2f2f2;
 }
 
-/* Frames keep a transparent canvas: overlays over a video or a page must stay see-through. */
-:where(:root:not([data-sombre="off"]):not([data-sombre-frame])) {
+/*
+ * Until the engine is ready, which then colors the root only if the page leaves <body> unpainted.
+ * Frames keep a transparent canvas: overlays over a video or a page must stay see-through.
+ */
+:where(:root:not([data-sombre="off"]):not([data-sombre-frame]):not([data-sombre-ready])) {
   background-color: #161616;
 }
 

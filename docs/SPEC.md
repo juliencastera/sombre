@@ -28,7 +28,9 @@ between navigations.
 
 1. **Instant base layer** — static CSS (`public/base-dark.css`, `public/base-auto.css`)
    injected by the browser before first paint: `color-scheme: dark`, dark canvas (top
-   page only: frames stay transparent, see §6) and text, and a "nothing paints light" guard (every element forced dark) until the
+   page only: frames stay transparent, see §6; once ready, the engine colors the root only
+   while the page leaves `<body>` unpainted, since a root background would make `<body>`
+   paint its own box over negative z-index layers) and text, and a "nothing paints light" guard (every element forced dark) until the
    engine marks the page ready (`data-sombre-ready`). Guarantees no white frame even
    before any JS runs. Registered **dynamically** (`chrome.scripting.registerContentScripts`)
    rather than in the manifest, so the browser only injects it where dark mode applies:
@@ -295,7 +297,7 @@ As built in M6:
 | Manifest | MV3 |
 | Language | TypeScript (strict) |
 | Extension framework / build | WXT (Vite) |
-| Content script | Vanilla TS, zero dependencies, built as a WXT unlisted script declared in the manifest (no WXT content script runtime). Budget < 38 KB minified, enforced by an E2E test (37.3 KB with frame schemes; revised from 30 KB, then 34 KB, then 37 KB, as contrast passes, native themes, cache, fixes, image analysis and frame schemes landed). Chrome code-caches extension scripts, so the remaining cost is negligible. The element picker is a separate script injected on demand |
+| Content script | Vanilla TS, zero dependencies, built as a WXT unlisted script declared in the manifest (no WXT content script runtime). Budget < 38 KB minified, enforced by an E2E test (37.6 KB with frame schemes and the canvas check; revised from 30 KB, then 34 KB, then 37 KB, as contrast passes, native themes, cache, fixes, image analysis and frame schemes landed). Chrome code-caches extension scripts, so the remaining cost is negligible. The element picker is a separate script injected on demand |
 | Popup / options | Svelte 5 |
 | Unit tests | Vitest (color math, APCA, rule rewriting) |
 | E2E / benchmark | Playwright with extension loaded |

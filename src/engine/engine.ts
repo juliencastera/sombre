@@ -1,4 +1,4 @@
-import { formatColor } from '../shared/color/parse.ts';
+import { formatColor, parseColor } from '../shared/color/parse.ts';
 import type { Fix } from '../shared/fixes.ts';
 import type { ContrastLevel, NativeMarker } from '../shared/settings.ts';
 import { ContrastPass } from './contrast.ts';
@@ -33,13 +33,25 @@ const canvasText = () => formatColor(transformColor({ r: 0, g: 0, b: 0, a: 1 }, 
 const border = () => formatColor(transformColor({ r: 221, g: 221, b: 221, a: 1 }, 'border'));
 /**
  * Defaults for pages that style nothing; zero specificity so any mirrored page rule wins.
+ * The root only gets the canvas color when nothing else paints the canvas (`canvasBg`):
+ * a page that colors `<body>` alone has that color propagated to the canvas, and a
+ * root background would make `<body>` paint its own box over the page's negative
+ * z-index layers (photos behind their card's text).
  * A frame keeps a transparent canvas and its parent's scheme on its root (`frameScheme`);
  * its content still gets dark form controls.
  */
-const baseRules = (frameScheme: Scheme | null) =>
-  frameScheme
-    ? `:where(:root){color:${canvasText()}}:root[${FRAME_ATTR}]{color-scheme:${frameScheme}!important}body{color-scheme:dark!important}`
-    : `:where(:root){background-color:${canvas()};color:${canvasText()}}:root{color-scheme:dark!important}`;
+const baseRules = (frameScheme: Scheme | null, canvasBg: boolean) =>
+  `:where(:root){${canvasBg ? `background-color:${canvas()};` : ''}color:${canvasText()}}` +
+  (frameScheme
+    ? `:root[${FRAME_ATTR}]{color-scheme:${frameScheme}!important}body{color-scheme:dark!important}`
+    : ':root{color-scheme:dark!important}');
+
+/** Whether the page paints `<body>` (as mirrored), which then colors the canvas. */
+function bodyPainted(): boolean {
+  if (!document.body) return false;
+  const { backgroundColor, backgroundImage } = getComputedStyle(document.body);
+  return (parseColor(backgroundColor)?.a ?? 0) > 0 || backgroundImage !== 'none';
+}
 /** Shadow-root counterpart of the base layer's pre-ready guard (the base layer cannot pierce shadow roots). */
 const guardRules = () =>
   `*{background-color:${canvas()}!important;color:${canvasText()}!important;border-color:${border()}!important}`;
@@ -133,6 +145,9 @@ export class Engine {
   /** In a frame, the scheme its element uses in the parent page; dark until the parent answers. */
   #frameScheme: Scheme | null = null;
   readonly #tellFrames: () => void;
+  /** The page paints `<body>`: the root gets no canvas color (see baseRules). */
+  #bodyPainted = false;
+  #canvasCheckQueued = false;
 
   constructor(osDark: () => boolean, onNative: (marker: NativeMarker | null) => void) {
     this.#osDark = osDark;
@@ -160,7 +175,7 @@ export class Engine {
       schedule: (scope) => this.#schedule(scope),
       discoverShadowRoots: (node) => this.#discoverShadowRoots(node),
       watchText: (node) => this.#contrast.watch(node),
-      baseRules: () => baseRules(this.#frameScheme) + this.#fixRules,
+      baseRules: () => baseRules(this.#frameScheme, !this.#frameScheme && !this.#bodyPainted) + this.#fixRules,
     };
     this.#documentScope = this.#register(new Scope(document, this.#context));
     this.#listen();
@@ -252,6 +267,8 @@ export class Engine {
       this.#store.setDisabled(!active);
       this.#guard.disabled = !active || this.#ready;
       if (this.#marker) applyMarker(this.#marker, this.#on);
+      // With the guard lifted, `<body>` shows the page's own (mirrored) background.
+      if (active && this.#ready) this.#checkCanvas();
       // This page's scheme may have changed: frames inside must follow it.
       this.#tellFrames();
     };
@@ -369,6 +386,23 @@ export class Engine {
     this.#pending.clear();
     for (const scope of scopes) scope.rebuild();
     if (this.#ready) this.#contrast.schedule();
+    if (this.#ready && this.#on && !this.#canvasCheckQueued) {
+      // Before the next frame: styles are computed then anyway.
+      this.#canvasCheckQueued = true;
+      requestAnimationFrame(() => {
+        this.#canvasCheckQueued = false;
+        if (this.#on) this.#checkCanvas();
+      });
+    }
+  }
+
+  /** Give the root the canvas color only while the page leaves `<body>` unpainted (see baseRules). */
+  #checkCanvas(): void {
+    if (this.#frameScheme) return;
+    const painted = bodyPainted();
+    if (painted === this.#bodyPainted) return;
+    this.#bodyPainted = painted;
+    this.#documentScope.refreshBase();
   }
 
   /** Signals from the MAIN-world hooks, which see what the page does to the CSSOM. */
