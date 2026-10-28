@@ -228,6 +228,21 @@ describe('rewriteValue', () => {
     expect(channelTwins('--gap', '4px', ['bg'], '')).toBe('');
   });
 
+  it('handles comma-separated channels (Bootstrap)', () => {
+    // `.bg-white { background-color: rgba(var(--bs-white-rgb), var(--bs-bg-opacity)) }`, `--bs-white-rgb: 255,255,255`.
+    expect(bg('rgba(var(--bs-white-rgb),var(--bs-bg-opacity))')).toBe(
+      `rgba(var(${channelVariable('bg', 'rgb', '--bs-white-rgb')},var(--bs-white-rgb)), var(--bs-bg-opacity))`,
+    );
+    const white = transformColor(rgba('#fff'), 'bg');
+    const [r, g, b] = [white.r, white.g, white.b].map(Math.round);
+    expect(channelTwins('--bs-white-rgb', '255,255,255', ['bg'], '')).toBe(
+      `${channelVariable('bg', 'rgb', '--bs-white-rgb')}:${r},${g},${b};`,
+    );
+    expect(channelTwins('--bs-white-rgb', '255, 255, 255', ['bg'], '')).toContain(`:${r},${g},${b};`);
+    // Mixed separators are not a channel list.
+    expect(channelTwins('--x', '255, 255 255', ['bg'], '')).toBe('');
+  });
+
   it('leaves light-dark() alone: the site already provides its dark color', () => {
     expect(bg('light-dark(#fff, #111)')).toBeNull();
   });

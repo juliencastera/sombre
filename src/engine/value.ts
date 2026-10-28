@@ -32,10 +32,14 @@ export function roleVariable(role: Role, name: string): string {
   return `--sombre-${role}${name}`;
 }
 
-/** `var(--x)` or `var(--x) / <alpha>` as the whole argument list of rgb()/hsl(). */
-const CHANNEL_VAR = /^\s*var\(\s*(--[\w-]+)\s*\)\s*(?:\/\s*(.+?))?\s*$/s;
-const HSL_CHANNELS = /^\s*(-?[\d.]+)(?:deg)?\s+([\d.]+)%\s+([\d.]+)%\s*$/;
-const RGB_CHANNELS = /^\s*([\d.]+)\s+([\d.]+)\s+([\d.]+)\s*$/;
+/**
+ * `var(--x)`, `var(--x) / <alpha>` or `var(--x), <alpha>` (Bootstrap's
+ * `rgba(var(--bs-white-rgb), var(--bs-bg-opacity))`) as the whole argument list of rgb()/hsl().
+ */
+const CHANNEL_VAR = /^\s*var\(\s*(--[\w-]+)\s*\)\s*(?:([/,])\s*(.+?))?\s*$/s;
+/** Channels separated by spaces (Tailwind, shadcn/ui) or commas (Bootstrap): twins keep the separator. */
+const HSL_CHANNELS = /^\s*(-?[\d.]+)(?:deg)?(\s*,\s*|\s+)([\d.]+)%\2([\d.]+)%\s*$/;
+const RGB_CHANNELS = /^\s*([\d.]+)(\s*,\s*|\s+)([\d.]+)\2([\d.]+)\s*$/;
 
 /** Twin of a custom property holding bare channels (`0 0% 100%`), transformed for a role. */
 export function channelVariable(role: Role, kind: 'rgb' | 'hsl', name: string): string {
@@ -67,15 +71,18 @@ function rgbToHslChannels({ r, g, b }: Rgba): string {
  */
 export function channelTwins(name: string, value: string, roles: readonly Role[], important: string): string {
   const hsl = HSL_CHANNELS.exec(value);
-  const rgb = hsl ? null : RGB_CHANNELS.exec(value);
-  if (!hsl && !rgb) return '';
-  const color = parseColor(hsl ? `hsl(${hsl[1]} ${hsl[2]}% ${hsl[3]}%)` : `rgb(${rgb![1]} ${rgb![2]} ${rgb![3]})`);
+  const match = hsl ?? RGB_CHANNELS.exec(value);
+  if (!match) return '';
+  const [, a, separator, b, c] = match;
+  const color = parseColor(hsl ? `hsl(${a} ${b}% ${c}%)` : `rgb(${a} ${b} ${c})`);
   if (!color) return '';
+  // The page's rgba(var(--x), a) needs commas inside --x, rgb(var(--x) / a) spaces.
+  const sep = separator!.includes(',') ? ',' : ' ';
   let out = '';
   for (const role of roles) {
     const t = transformColor(color, role);
     const channels = hsl ? rgbToHslChannels(t) : `${Math.round(t.r)} ${Math.round(t.g)} ${Math.round(t.b)}`;
-    out += `${channelVariable(role, hsl ? 'hsl' : 'rgb', name)}:${channels}${important};`;
+    out += `${channelVariable(role, hsl ? 'hsl' : 'rgb', name)}:${channels.replaceAll(' ', sep)}${important};`;
   }
   return out;
 }
@@ -174,9 +181,9 @@ function rewrite(s: string, role: Role, options: RewriteOptions): Result {
             changed = true;
           } else if (COLOR_FUNCTION.test(name) && CHANNEL_VAR.test(inner) && /^(?:rgba?|hsla?)$/.test(name)) {
             // hsl(var(--background) / .5) with `--background: 0 0% 100%` (shadcn/ui, Tailwind themes).
-            const [, variable, alpha] = CHANNEL_VAR.exec(inner)!;
+            const [, variable, separator, alpha] = CHANNEL_VAR.exec(inner)!;
             const kind = name.startsWith('rgb') ? 'rgb' : 'hsl';
-            out += `${name}(var(${channelVariable(role, kind, variable!)},var(${variable}))${alpha ? ` / ${alpha}` : ''})`;
+            out += `${name}(var(${channelVariable(role, kind, variable!)},var(${variable}))${alpha ? `${separator === ',' ? ',' : ' /'} ${alpha}` : ''})`;
             changed = true;
           } else if (COLOR_FUNCTION.test(name)) {
             const parsed = parseColor(whole) ?? options.resolveColor?.(whole) ?? null;

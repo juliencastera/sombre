@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Fixture — Bootstrap 5 utilities</title>
+    <style>
+      /* Bootstrap 5.3: comma-separated channel variables used through rgba(var(--x), var(--opacity)). */
+      :root {
+        --bs-white-rgb: 255, 255, 255;
+        --bs-primary-rgb: 13, 110, 253;
+        --bs-body-color-rgb: 33, 37, 41;
+        --bs-light-rgb: 248,249,250;
+      }
+      body {
+        margin: 0;
+        padding: 24px;
+        font: 16px/1.5 system-ui, sans-serif;
+        background: #f8f9fa;
+      }
+      .bg-white {
+        --bs-bg-opacity: 1;
+        background-color: rgba(var(--bs-white-rgb), var(--bs-bg-opacity)) !important;
+      }
+      .bg-light {
+        --bs-bg-opacity: 1;
+        background-color: rgba(var(--bs-light-rgb), var(--bs-bg-opacity)) !important;
+      }
+      .bg-primary {
+        --bs-bg-opacity: 1;
+        background-color: rgba(var(--bs-primary-rgb), var(--bs-bg-opacity)) !important;
+      }
+      .text-body {
+        --bs-text-opacity: 1;
+        color: rgba(var(--bs-body-color-rgb), var(--bs-text-opacity)) !important;
+      }
+      .p-3 {
+        padding: 16px;
+      }
+    </style>
+  </head>
+  <body>
+    <header class="bg-white p-3"><span class="text-body">Shop header</span></header>
+    <nav class="bg-light p-3 text-body">Navigation</nav>
+    <button class="bg-primary p-3">Buy</button>
+  </body>
+</html>
