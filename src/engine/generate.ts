@@ -1,4 +1,5 @@
 import { formatColor, parseColor } from '../shared/color/parse.ts';
+import { rgbToOklch } from '../shared/color/oklab.ts';
 import type { Rgba } from '../shared/color/types.ts';
 import { fixTextColor } from './contrast-math.ts';
 import { contrastTarget, ROLES, type Role } from './transform.ts';
@@ -9,12 +10,38 @@ export interface GenerateOptions extends RewriteOptions {
   resolveImport?: (url: string) => string | null;
   /** Custom property standing for the dark version of a background image (see DarkIcons), or null to leave it. */
   icon?: (url: string) => string | null;
-  /** The sheet belongs to an SVG (a logo or an illustration exported with its `<style>`). */
-  art?: boolean;
+  /**
+   * The sheet belongs to an SVG (a logo or an illustration exported with its `<style>`):
+   * `ink` maps its paints with the `art` role, `keep` leaves them as drawn (see artMode).
+   */
+  art?: 'ink' | 'keep';
 }
 
 /** Paint properties of SVG artwork, whose colors are drawings rather than text. */
 const ART_PROPERTIES = new Set(['fill', 'stroke', 'stop-color', 'flood-color']);
+
+/**
+ * How to treat an SVG's own stylesheet. Artwork that paints white next to a vivid
+ * color carries its own backdrop (white birds on lpo.fr's blue badge: white shapes
+ * would not show on the white page otherwise), so its dark details sit on that
+ * backdrop and every color stays as drawn. Otherwise its greys and black are ink
+ * on the page, lifted like text.
+ */
+export function artMode(rules: CSSRuleList): 'ink' | 'keep' {
+  let white = false;
+  let vivid = false;
+  for (const rule of rules) {
+    if (!(rule instanceof CSSStyleRule)) continue;
+    for (const property of ART_PROPERTIES) {
+      const color = parseColor(rule.style.getPropertyValue(property));
+      if (!color || color.a < 1) continue;
+      const { l, c } = rgbToOklch(color);
+      white ||= l > 0.97 && c < 0.02;
+      vivid ||= c >= 0.06;
+    }
+  }
+  return white && vivid ? 'keep' : 'ink';
+}
 
 /** A background image that is a single `url()`, with its URL. */
 const SINGLE_URL = /^url\(\s*(['"]?)(.*?)\1\s*\)$/s;
@@ -131,12 +158,9 @@ export function declarations(
       continue;
     }
 
-    const role =
-      masked && property === 'background-color'
-        ? 'fg'
-        : options.art && ART_PROPERTIES.has(property)
-          ? 'art'
-          : ROLE_BY_PROPERTY[property];
+    const art = options.art && ART_PROPERTIES.has(property);
+    if (art && options.art === 'keep') continue;
+    const role = masked && property === 'background-color' ? 'fg' : art ? 'art' : ROLE_BY_PROPERTY[property];
     if (!role) continue;
     if (!value) {
       pendingShorthand = true;

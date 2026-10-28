@@ -1,4 +1,4 @@
-import { generateRules, type GenerateOptions } from './generate.ts';
+import { artMode, generateRules, type GenerateOptions } from './generate.ts';
 import { RemoteSheets } from './remote.ts';
 
 interface Entry {
@@ -159,7 +159,11 @@ export class MirrorStore {
 
     const media = source.media?.mediaText;
     let css = rules
-      ? generateRules(rules, { ...this.#options, baseUrl: source.href, art: source.ownerNode instanceof SVGStyleElement })
+      ? generateRules(rules, {
+          ...this.#options,
+          baseUrl: source.href,
+          art: source.ownerNode instanceof SVGStyleElement ? artMode(rules) : undefined,
+        })
       : source.href
         ? (this.#remote.get(source.href) ?? '')
         : '';

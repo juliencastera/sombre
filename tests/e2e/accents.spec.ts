@@ -37,4 +37,7 @@ test('vivid bars keep their color and icons follow their color', async ({ contex
   // A logo's own stylesheet: the brand color stays as drawn, its black ink turns light.
   expect((await style(page, '.logo-art .st1')).fill).toBe('rgb(0, 135, 205)');
   expect(oklch((await style(page, '.logo-art .st3')).fill).l).toBeGreaterThan(0.85);
+  // With its own white-on-color backdrop, the black details sit on the logo: all colors stay.
+  expect((await style(page, '.logo-badge .badge-ink')).fill).toBe('rgb(25, 25, 25)');
+  expect((await style(page, '.logo-badge .badge-white')).fill).toBe('rgb(255, 255, 255)');
 });
