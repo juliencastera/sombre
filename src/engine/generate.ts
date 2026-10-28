@@ -77,11 +77,30 @@ const VAR_SHORTHANDS: [string, Role][] = [
   ['column-rule', 'border'],
 ];
 
+/** Blend modes that keep the darker of an element and its backdrop. */
+const DARKENING_BLEND = /^(?:multiply|darken|color-burn)$/;
+/** A selector whose last compound is a picture element, without a pseudo-element. */
+const MEDIA_SUBJECT = /(?:^|[\s>+~])(?:img|picture|video|canvas|svg)(?![\w-])[^\s>+~]*$/i;
+
+/** Whether every selector of a list styles a picture (`.card img`, `picture.photo`). */
+export function selectsMedia(selectorText: string): boolean {
+  return selectorText.split(',').every((selector) => MEDIA_SUBJECT.test(selector.trim()) && !selector.includes('::'));
+}
+
 /**
  * Transformed color declarations of a style block. `forceImportant` is used for
  * inline styles, which only `!important` stylesheet rules can override.
+ * `media`: the block styles pictures. Product photos are often blended with
+ * `multiply` or `darken` so their white background melts into a light card; once
+ * the card is dark, the blend keeps the card's color almost everywhere and the
+ * photo vanishes. It is shown as is instead, on its own white background.
  */
-export function declarations(style: CSSStyleDeclaration, options: GenerateOptions, forceImportant = false): string {
+export function declarations(
+  style: CSSStyleDeclaration,
+  options: GenerateOptions,
+  forceImportant = false,
+  media = false,
+): string {
   let out = '';
   let pendingShorthand = false;
   let text: { rewritten: string; important: string } | null = null;
@@ -99,6 +118,11 @@ export function declarations(style: CSSStyleDeclaration, options: GenerateOption
         if (rewritten !== null) out += `${roleVariable(role, property)}:${rewritten}${important};`;
       }
       out += channelTwins(property, value, ROLES, important);
+      continue;
+    }
+
+    if (property === 'mix-blend-mode') {
+      if (media && DARKENING_BLEND.test(value.trim())) out += `mix-blend-mode:normal${important};`;
       continue;
     }
 
@@ -185,7 +209,8 @@ export function generateRules(rules: CSSRuleList, options: GenerateOptions): str
     const rule = rules[i]!;
     if (rule instanceof CSSStyleRule) {
       const nested = rule.cssRules?.length ? generateRules(rule.cssRules, options) : '';
-      out += wrap(rule.selectorText, declarations(rule.style, options) + nested);
+      const media = rule.style.getPropertyValue('mix-blend-mode') !== '' && selectsMedia(rule.selectorText);
+      out += wrap(rule.selectorText, declarations(rule.style, options, false, media) + nested);
     } else if (rule instanceof CSSMediaRule) {
       out += wrap(`@media ${rule.media.mediaText}`, generateRules(rule.cssRules, options));
     } else if (rule instanceof CSSSupportsRule) {

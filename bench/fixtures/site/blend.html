@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Fixture — product photos blended into light cards</title>
+    <link rel="stylesheet" href="common.css" />
+    <style>
+      /* As on ldlc.com: the white background of product photos melts into a light card. */
+      .card {
+        width: 200px;
+        padding: 20px;
+        background-color: #f8f8f8;
+      }
+      .img-transparent img {
+        display: block;
+        width: 160px;
+        height: 160px;
+        mix-blend-mode: darken;
+      }
+      /* A tint laid over a picture keeps its blend. */
+      .tint {
+        mix-blend-mode: multiply;
+      }
+    </style>
+  </head>
+  <body>
+    <header class="site"><span class="logo">Shop</span></header>
+    <main>
+      <div class="card">
+        <span class="img-transparent">
+          <img
+            alt="Product"
+            src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16'%3E%3Crect width='16' height='16' fill='%23fff'/%3E%3Crect x='4' y='4' width='8' height='8' fill='%23d8432e'/%3E%3C/svg%3E"
+          />
+        </span>
+        <span class="tint">Tint</span>
+      </div>
+    </main>
+  </body>
+</html>
