@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.0.2](https://github.com/juliencastera/sombre/compare/v1.0.1...v1.0.2) (2026-10-30)
+
+
+### Bug Fixes
+
+* **engine:** answer frames through a private port ([b227580](https://github.com/juliencastera/sombre/commit/b227580cf173b6d7477e8f001ece423596dd5fc4))
+* **engine:** darken Bootstrap's comma-separated channel variables ([e954bdc](https://github.com/juliencastera/sombre/commit/e954bdc1db16a99f76cfb73b4862f32bbfce5314))
+* **engine:** give wide outlines the background role ([7e0578a](https://github.com/juliencastera/sombre/commit/7e0578a7ee1ae6473a4f4cb5b2b00ceedef8e960))
+* **engine:** keep every color of logos that carry their own backdrop ([a9ff402](https://github.com/juliencastera/sombre/commit/a9ff4025e9bd9a16fd927b237d991e163a2d1d25))
+* **engine:** keep logo colors drawn in an SVG's own stylesheet ([63f6999](https://github.com/juliencastera/sombre/commit/63f69998d898ac8c1bdb9070be628284736457fd))
+* **engine:** keep transparent iframes see-through ([23a5501](https://github.com/juliencastera/sombre/commit/23a5501b95c67d14d2ec5457e2a5d4cd250d5558))
+* **engine:** leave the canvas to &lt;body&gt; when the page paints it ([0cfe9b6](https://github.com/juliencastera/sombre/commit/0cfe9b6f321e6e4a1edce95d322aa3c8bd30057c))
+* **engine:** lighten faint tinted overlays and keep colored glows vivid ([5bd74da](https://github.com/juliencastera/sombre/commit/5bd74da73a93b5404b0e4362043614aec77afecd))
+* **engine:** show pictures blended into light cards ([8ee39c0](https://github.com/juliencastera/sombre/commit/8ee39c02d9e6940a5ccfbd480c287409ebdc0bf3))
+* **engine:** treat inline SVG paints as artwork ([24e93a5](https://github.com/juliencastera/sombre/commit/24e93a58080a0050b3f3a4b5fd39307903a48373))
+
 ## [1.0.1](https://github.com/juliencastera/sombre/compare/v1.0.0...v1.0.1) (2026-10-27)
 
 
