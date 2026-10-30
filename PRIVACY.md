@@ -1,6 +1,6 @@
 # Privacy policy
 
-*Last updated: 2026-10-28. [Version française plus bas](#politique-de-confidentialité).*
+*Last updated: 2026-10-30. [Version française plus bas](#politique-de-confidentialité).*
 
 Sombre is a browser extension that turns websites dark. It has no account, no analytics, no
 advertising and no server of its own. **No browsing data leaves your browser.**
@@ -43,6 +43,15 @@ site's domain name (never the full address), Sombre's version, your contrast lev
 state and your browser's version. Nothing is sent unless you submit the issue yourself on
 GitHub, where it becomes public.
 
+## When you uninstall Sombre
+
+Chrome opens a short feedback form on Google Forms. Nothing is sent unless you fill it in and
+submit it; your answers, and your e-mail address only if you choose to give it, are then received
+by the developer through Google, under [Google's privacy policy](https://policies.google.com/privacy).
+
+After two weeks of use, the popup offers once to leave a review on the Chrome Web Store. The
+link only opens the store page.
+
 ## Permissions
 
 | Permission | Why |
@@ -61,7 +70,7 @@ policy changes, the new version is published in this file with a new date.
 
 # Politique de confidentialité
 
-*Dernière mise à jour : 28 octobre 2026.*
+*Dernière mise à jour : 30 octobre 2026.*
 
 Sombre est une extension de navigateur qui passe les sites web en sombre. Elle n'a ni compte, ni
 statistiques, ni publicité, ni serveur. **Aucune donnée de navigation ne quitte votre
@@ -104,6 +113,16 @@ Le bouton ouvre dans un nouvel onglet un ticket pré-rempli sur la page GitHub d
 contient le nom de domaine du site (jamais l'adresse complète), la version de Sombre, votre
 niveau de contraste, l'état du site et la version de votre navigateur. Rien n'est envoyé tant
 que vous ne publiez pas vous-même le ticket sur GitHub, où il devient public.
+
+## Quand vous désinstallez Sombre
+
+Chrome ouvre un court formulaire de retour sur Google Forms. Rien n'est envoyé tant que vous ne le
+remplissez pas et ne l'envoyez pas ; vos réponses, et votre adresse e-mail seulement si vous
+choisissez de la donner, sont alors reçues par le développeur via Google, selon les
+[règles de confidentialité de Google](https://policies.google.com/privacy?hl=fr).
+
+Après deux semaines d'utilisation, le popup propose une fois de laisser un avis sur le Chrome Web
+Store. Le lien ouvre seulement la page du store.
 
 ## Autorisations
 

@@ -1,5 +1,5 @@
 import { CACHE_INDEX_KEY, CACHE_PREFIX, evictions, type CacheIndex } from '../shared/cache.ts';
-import { SHARED_FIXES_URL } from '../shared/config.ts';
+import { SHARED_FIXES_URL, UNINSTALL_URL } from '../shared/config.ts';
 import { FIXES_PUBLIC_KEY } from '../shared/fixes-key.ts';
 import { SHARED_FIXES_KEY, verifyFixList, type FixList } from '../shared/fixes.ts';
 import type { ContentRequest, FetchCssRequest, FetchImageRequest, FetchResponse } from '../shared/messages.ts';
@@ -150,6 +150,7 @@ export default defineBackground(() => {
     void browser.alarms.create(FIXES_ALARM, { periodInMinutes: 24 * 60 });
     if (reason === 'install') void welcome();
     void startReviewClock();
+    if (UNINSTALL_URL) void browser.runtime.setUninstallURL(UNINSTALL_URL);
   });
   browser.runtime.onStartup.addListener(queueSync);
   browser.alarms.onAlarm.addListener((alarm) => {

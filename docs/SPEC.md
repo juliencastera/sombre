@@ -295,6 +295,8 @@ As built in M6:
   your browser."* Network requests are the daily signed fix list and the stylesheets and images a
   page references, fetched again from the same addresses to compute their dark version (other
   domains without cookies).
+- On uninstall, Chrome opens a short Google Form (`runtime.setUninstallURL`, `WXT_UNINSTALL_URL`;
+  off when empty). No GitHub account needed; nothing is sent unless the user submits it.
 - Known limitation: requires a GitHub account (account-less form deferred).
 
 ---

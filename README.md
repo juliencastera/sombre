@@ -40,13 +40,15 @@ Disable Dark Reader first: both use Alt+Shift+D.
 
 ## Configuration
 
-Builds point at this repository by default: "Report this site" opens an issue here, and the
-signed shared fix list is refreshed daily from `fixes/fixes.signed.json` on `main`. A fork
+Builds point at this repository by default: "Report this site" opens an issue here, the
+signed shared fix list is refreshed daily from `fixes/fixes.signed.json` on `main`, and Chrome
+opens the project's feedback form after an uninstall. A fork
 overrides them in a `.env` file before building (an empty value turns the feature off):
 
 ```sh
 WXT_REPO_URL=https://github.com/<owner>/sombre
 WXT_FIXES_URL=https://raw.githubusercontent.com/<owner>/sombre/main/fixes/fixes.signed.json
+WXT_UNINSTALL_URL=https://example.com/feedback
 ```
 
 ## Shared fixes
