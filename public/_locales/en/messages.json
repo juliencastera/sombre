@@ -1,9 +1,12 @@
 {
   "extName": {
+    "message": "Sombre — Dark Mode for Every Website"
+  },
+  "appName": {
     "message": "Sombre"
   },
   "extDescription": {
-    "message": "Dark mode for every website: no white flash, guaranteed text contrast, instant toggle."
+    "message": "Dark theme and night mode for any site: no white flash, readable text with guaranteed contrast, one-click toggle per site."
   },
   "commandToggleSite": {
     "message": "Toggle dark mode on the current site"

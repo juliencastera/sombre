@@ -7,7 +7,7 @@ export default defineConfig({
     name: '__MSG_extName__',
     description: '__MSG_extDescription__',
     default_locale: 'en',
-    action: { default_title: '__MSG_extName__' },
+    action: { default_title: '__MSG_appName__' },
     homepage_url: 'https://github.com/juliencastera/sombre',
     // Ed25519 in WebCrypto (verifying the shared fix list) ships in Chrome 137.
     minimum_chrome_version: '137',

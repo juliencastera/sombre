@@ -136,7 +136,7 @@
     </section>
   {:else if loaded}
     <header>
-      <h1>{t('extName')}</h1>
+      <h1>{t('appName')}</h1>
       <p class="hint">{t('notAvailable')}</p>
     </header>
   {/if}

@@ -2,13 +2,13 @@
 
 ## Name
 
-Sombre
+Sombre — Dark Mode for Every Website
 
-(From the manifest. Search results show it next to the summary; the summary carries the keywords.)
+(From the manifest, 75 characters max. Search weighs the name most, so it carries the main keywords; the toolbar button and the popup show "Sombre" alone.)
 
 ## Summary (from the manifest, 132 characters max)
 
-Dark mode for every website: no white flash, guaranteed text contrast, instant toggle.
+Dark theme and night mode for any site: no white flash, readable text with guaranteed contrast, one-click toggle per site.
 
 ## Description
 

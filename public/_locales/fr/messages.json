@@ -1,9 +1,12 @@
 {
   "extName": {
+    "message": "Sombre — Mode sombre pour tous les sites"
+  },
+  "appName": {
     "message": "Sombre"
   },
   "extDescription": {
-    "message": "Le mode sombre sur tous les sites : sans flash blanc, contraste du texte garanti, bascule instantanée."
+    "message": "Thème sombre et mode nuit pour tous les sites : sans flash blanc, texte au contraste garanti, activation en un clic par site."
   },
   "commandToggleSite": {
     "message": "Basculer le mode sombre sur le site actuel"

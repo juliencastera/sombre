@@ -2,11 +2,13 @@
 
 ## Nom
 
-Sombre
+Sombre — Mode sombre pour tous les sites
+
+(Depuis le manifest, 75 caractères max. La recherche donne le plus de poids au nom ; le bouton de la barre d’outils et le popup affichent « Sombre » seul.)
 
 ## Résumé (depuis le manifest, 132 caractères max)
 
-Le mode sombre sur tous les sites : sans flash blanc, contraste du texte garanti, bascule instantanée.
+Thème sombre et mode nuit pour tous les sites : sans flash blanc, texte au contraste garanti, activation en un clic par site.
 
 ## Description
 
