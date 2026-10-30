@@ -110,6 +110,14 @@ test('the options page changes global settings', async ({ openOptions, settings 
   await expect(options.getByTestId('shortcut')).toHaveText('Alt+Shift+D');
 });
 
+test('the welcome page explains the button, the shortcut and fixes', async ({ context, extensionId }) => {
+  const welcome = await context.newPage();
+  await welcome.goto(`chrome-extension://${extensionId}/welcome.html`);
+  await expect(welcome.getByRole('heading', { level: 1 })).toHaveText('Sombre is ready');
+  await expect(welcome.getByRole('listitem')).toHaveCount(3);
+  await expect(welcome.getByText('Or press Alt+Shift+D to switch it.')).toBeVisible();
+});
+
 test.describe('in French', () => {
   test.use({ lang: 'fr' });
 

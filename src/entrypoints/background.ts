@@ -129,11 +129,18 @@ async function fetchResource(url: string, frameUrl: string | undefined, image: b
   }
 }
 
+/** First install: show where the button is and what it does. Unpacked builds (development, tests) skip it. */
+async function welcome(): Promise<void> {
+  if ((await browser.management.getSelf()).installType === 'development') return;
+  await browser.tabs.create({ url: browser.runtime.getURL('/welcome.html') });
+}
+
 export default defineBackground(() => {
-  browser.runtime.onInstalled.addListener(() => {
+  browser.runtime.onInstalled.addListener(({ reason }) => {
     queueSync();
     void refreshSharedFixes();
     void browser.alarms.create(FIXES_ALARM, { periodInMinutes: 24 * 60 });
+    if (reason === 'install') void welcome();
   });
   browser.runtime.onStartup.addListener(queueSync);
   browser.alarms.onAlarm.addListener((alarm) => {

@@ -251,5 +251,38 @@
         "content": "$2"
       }
     }
+  },
+  "welcomeTitle": {
+    "message": "Sombre est prêt"
+  },
+  "welcomeLead": {
+    "message": "Les sites s’ouvrent désormais en sombre. Trois choses à savoir :"
+  },
+  "welcomePinTitle": {
+    "message": "Épinglez Sombre dans la barre d’outils"
+  },
+  "welcomePinText": {
+    "message": "Cliquez sur la pièce de puzzle en haut à droite de Chrome, puis sur l’épingle à côté de Sombre. Son bouton règle le site où vous êtes."
+  },
+  "welcomeSiteTitle": {
+    "message": "Un clic par site"
+  },
+  "welcomeSiteText": {
+    "message": "Dans son popup, choisissez Sombre ou Jamais pour le site actuel."
+  },
+  "welcomeShortcut": {
+    "message": "Ou appuyez sur $KEY$ pour basculer.",
+    "placeholders": {
+      "key": {
+        "content": "$1",
+        "example": "Alt+Shift+D"
+      }
+    }
+  },
+  "welcomeFixTitle": {
+    "message": "Un élément s’affiche mal ?"
+  },
+  "welcomeFixText": {
+    "message": "Choisissez « Corriger un élément » dans le popup et cliquez dessus dans la page, puis gardez-le d’origine, inversez-le ou forcez-le en sombre."
   }
 }

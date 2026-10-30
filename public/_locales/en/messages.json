@@ -251,5 +251,38 @@
         "content": "$2"
       }
     }
+  },
+  "welcomeTitle": {
+    "message": "Sombre is ready"
+  },
+  "welcomeLead": {
+    "message": "Websites now open dark. Three things worth knowing:"
+  },
+  "welcomePinTitle": {
+    "message": "Pin Sombre to the toolbar"
+  },
+  "welcomePinText": {
+    "message": "Click the puzzle piece at the top right of Chrome, then the pin next to Sombre. Its button controls the site you are on."
+  },
+  "welcomeSiteTitle": {
+    "message": "One click per site"
+  },
+  "welcomeSiteText": {
+    "message": "In its popup, choose Dark or Never for the current site."
+  },
+  "welcomeShortcut": {
+    "message": "Or press $KEY$ to switch it.",
+    "placeholders": {
+      "key": {
+        "content": "$1",
+        "example": "Alt+Shift+D"
+      }
+    }
+  },
+  "welcomeFixTitle": {
+    "message": "Something looks wrong?"
+  },
+  "welcomeFixText": {
+    "message": "Choose “Fix an element” in the popup and click it on the page, then keep it original, invert it or force it dark."
   }
 }
