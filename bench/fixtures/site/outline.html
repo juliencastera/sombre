@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Fixture — outlines used as mats</title>
+    <link rel="stylesheet" href="common.css" />
+    <style>
+      /* As on instagram.com: a wide outline in the row's color masks the corners around chat bubbles. */
+      :root {
+        --row-background: #fff;
+      }
+      .thread {
+        width: 320px;
+        padding: 20px;
+        background-color: var(--row-background);
+      }
+      .bubble {
+        width: fit-content;
+        margin: 12px 0 12px auto;
+        padding: 8px 12px;
+        border-radius: 18px;
+        background-color: #3797f0;
+        color: #fff;
+      }
+      .via-variable {
+        outline: 10px solid var(--row-background);
+      }
+      .plain {
+        outline: 10px solid #fff;
+      }
+      /* A focus ring is an accent that must stay visible. */
+      .ring {
+        outline: 2px solid #fff;
+      }
+    </style>
+  </head>
+  <body>
+    <header class="site"><span class="logo">Chat</span></header>
+    <main>
+      <div class="thread">
+        <div class="bubble via-variable">Hello</div>
+        <div class="bubble plain">How are you?</div>
+        <button class="ring">Send</button>
+      </div>
+    </main>
+  </body>
+</html>

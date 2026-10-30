@@ -109,6 +109,18 @@ const VAR_SHORTHANDS: [string, Role][] = [
   ['column-rule', 'border'],
 ];
 
+/**
+ * Focus rings are a few pixels wide. A wider outline painted in the surface's
+ * own color is a mat around the element (Instagram masks the corners of its
+ * chat bubbles with a 10px outline in the row's background color).
+ */
+function outlineRole(style: CSSStyleDeclaration): Role {
+  const width = /(?:^|\s)([\d.]+)(px|r?em)(?=\s|$)/.exec(
+    style.getPropertyValue('outline-width') || style.getPropertyValue('outline'),
+  );
+  return width && parseFloat(width[1]!) * (width[2] === 'px' ? 1 : 16) >= 6 ? 'bg' : 'fg';
+}
+
 /** Blend modes that keep the darker of an element and its backdrop. */
 const DARKENING_BLEND = /^(?:multiply|darken|color-burn)$/;
 /** A selector whose last compound is a picture element, without a pseudo-element. */
@@ -160,7 +172,14 @@ export function declarations(
 
     const art = options.art && ART_PROPERTIES.has(property);
     if (art && options.art === 'keep') continue;
-    const role = masked && property === 'background-color' ? 'fg' : art ? 'art' : ROLE_BY_PROPERTY[property];
+    const role =
+      masked && property === 'background-color'
+        ? 'fg'
+        : art
+          ? 'art'
+          : property === 'outline-color'
+            ? outlineRole(style)
+            : ROLE_BY_PROPERTY[property];
     if (!role) continue;
     if (!value) {
       pendingShorthand = true;
@@ -199,7 +218,7 @@ export function declarations(
     for (const [shorthand, role] of VAR_SHORTHANDS) {
       const value = style.getPropertyValue(shorthand);
       if (!value.includes('var(')) continue;
-      const rewritten = rewriteValue(value, role, options);
+      const rewritten = rewriteValue(value, shorthand === 'outline' ? outlineRole(style) : role, options);
       const important = forceImportant || style.getPropertyPriority(shorthand) ? '!important' : '';
       if (rewritten !== null) out += `${shorthand}:${rewritten}${important};`;
     }
