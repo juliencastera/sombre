@@ -118,6 +118,27 @@ test('the welcome page explains the button, the shortcut and fixes', async ({ co
   await expect(welcome.getByText('Or press Alt+Shift+D to switch it.')).toBeVisible();
 });
 
+test('the popup asks for a review once, after two weeks', async ({ context, worker, openPopup }) => {
+  const page = await context.newPage();
+  await page.goto(fixture('basic'));
+  // Installed just now: not yet.
+  await expect
+    .poll(() => worker.evaluate(async () => (await chrome.storage.local.get('sombre:review'))['sombre:review']))
+    .toBeTruthy();
+  let popup = await openPopup(page);
+  await expect(popup.getByRole('radio', { name: 'Never' })).toBeVisible();
+  await expect(popup.getByTestId('review')).toHaveCount(0);
+
+  await worker.evaluate(() => chrome.storage.local.set({ 'sombre:review': { since: Date.now() - 15 * 86_400_000 } }));
+  popup = await openPopup(page);
+  await popup.getByRole('button', { name: 'No thanks' }).click();
+  await expect(popup.getByTestId('review')).toHaveCount(0);
+
+  popup = await openPopup(page);
+  await expect(popup.getByRole('radio', { name: 'Never' })).toBeVisible();
+  await expect(popup.getByTestId('review')).toHaveCount(0);
+});
+
 test.describe('in French', () => {
   test.use({ lang: 'fr' });
 

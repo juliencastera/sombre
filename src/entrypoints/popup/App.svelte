@@ -4,6 +4,7 @@
   import { t } from '../../shared/i18n.ts';
   import { browserName, issueUrl } from '../../shared/report.ts';
   import type { GetStateRequest, PageState } from '../../shared/messages.ts';
+  import { REVIEW_KEY, reviewDue, reviewUrl, type ReviewState } from '../../shared/review.ts';
   import {
     DEFAULT_SETTINGS,
     findSiteKey,
@@ -37,6 +38,7 @@
   let loaded = $state(false);
   let shortcut = $state('');
   let tabId = $state<number | undefined>(undefined);
+  let review = $state<ReviewState | undefined>(undefined);
 
   const effective = $derived(page ? resolveEffective(settings, page.hostname, osDark) : null);
   const siteState = $derived.by<SiteState | null>(() => {
@@ -48,7 +50,9 @@
   const nativeInUse = $derived(Boolean(page?.native && effective?.on && effective.reason !== 'site-dark'));
 
   onMount(async () => {
-    settings = normalizeSettings((await browser.storage.local.get(SETTINGS_KEY))[SETTINGS_KEY]);
+    const stored = await browser.storage.local.get([SETTINGS_KEY, REVIEW_KEY]);
+    settings = normalizeSettings(stored[SETTINGS_KEY]);
+    review = stored[REVIEW_KEY] as ReviewState | undefined;
     tabId = tabParam ? Number(tabParam) : (await browser.tabs.query({ active: true, currentWindow: true }))[0]?.id;
     if (tabId !== undefined) {
       const request: GetStateRequest = { type: 'sombre:get-state' };
@@ -82,6 +86,13 @@
       browser: browserName(navigator.userAgent),
     });
     void browser.tabs.create({ url });
+  }
+
+  /** Asked once: rating or dismissing both end it. */
+  async function closeReview(rate: boolean) {
+    review = { ...review!, done: true };
+    await browser.storage.local.set({ [REVIEW_KEY]: $state.snapshot(review) });
+    if (rate) void browser.tabs.create({ url: reviewUrl(browser.runtime.id) });
   }
 
   function setSite(state: SiteState | 'default') {
@@ -169,6 +180,15 @@
     </footer>
     {#if shortcut}
       <p class="shortcut">{t('shortcut', shortcut)}</p>
+    {/if}
+    {#if reviewDue(review, Date.now())}
+      <aside class="review" data-testid="review">
+        <p>{t('reviewAsk')}</p>
+        <div>
+          <button type="button" class="link-button" onclick={() => closeReview(true)}>{t('reviewRate')}</button>
+          <button type="button" class="link-button muted" onclick={() => closeReview(false)}>{t('reviewLater')}</button>
+        </div>
+      </aside>
     {/if}
   {/if}
 </main>
@@ -281,6 +301,24 @@
   .shortcut {
     margin-top: -8px;
     font-size: 12px;
+    color: var(--text-3);
+  }
+
+  .review {
+    padding: 10px 12px;
+    border-radius: 8px;
+    background: var(--surface-2);
+    color: var(--text-2);
+    font-size: 13px;
+  }
+
+  .review div {
+    display: flex;
+    gap: 16px;
+    margin-top: 6px;
+  }
+
+  .review .muted {
     color: var(--text-3);
   }
 </style>

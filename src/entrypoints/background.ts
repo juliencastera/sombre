@@ -3,6 +3,7 @@ import { SHARED_FIXES_URL } from '../shared/config.ts';
 import { FIXES_PUBLIC_KEY } from '../shared/fixes-key.ts';
 import { SHARED_FIXES_KEY, verifyFixList, type FixList } from '../shared/fixes.ts';
 import type { ContentRequest, FetchCssRequest, FetchImageRequest, FetchResponse } from '../shared/messages.ts';
+import { REVIEW_KEY, type ReviewState } from '../shared/review.ts';
 import { NATIVE_KEY, normalizeSettings, SETTINGS_KEY, sitePatterns } from '../shared/settings.ts';
 
 const BASE_ID = 'sombre-base';
@@ -135,12 +136,20 @@ async function welcome(): Promise<void> {
   await browser.tabs.create({ url: browser.runtime.getURL('/welcome.html') });
 }
 
+/** Start counting toward the review prompt, on install or on the first update that has it. */
+async function startReviewClock(): Promise<void> {
+  if ((await browser.storage.local.get(REVIEW_KEY))[REVIEW_KEY]) return;
+  const state: ReviewState = { since: Date.now() };
+  await browser.storage.local.set({ [REVIEW_KEY]: state });
+}
+
 export default defineBackground(() => {
   browser.runtime.onInstalled.addListener(({ reason }) => {
     queueSync();
     void refreshSharedFixes();
     void browser.alarms.create(FIXES_ALARM, { periodInMinutes: 24 * 60 });
     if (reason === 'install') void welcome();
+    void startReviewClock();
   });
   browser.runtime.onStartup.addListener(queueSync);
   browser.alarms.onAlarm.addListener((alarm) => {

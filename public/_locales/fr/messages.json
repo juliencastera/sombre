@@ -284,5 +284,14 @@
   },
   "welcomeFixText": {
     "message": "Choisissez « Corriger un élément » dans le popup et cliquez dessus dans la page, puis gardez-le d’origine, inversez-le ou forcez-le en sombre."
+  },
+  "reviewAsk": {
+    "message": "Sombre vous plaît ? Un avis aide d’autres personnes à le trouver."
+  },
+  "reviewRate": {
+    "message": "Laisser un avis"
+  },
+  "reviewLater": {
+    "message": "Non merci"
   }
 }

@@ -284,5 +284,14 @@
   },
   "welcomeFixText": {
     "message": "Choose “Fix an element” in the popup and click it on the page, then keep it original, invert it or force it dark."
+  },
+  "reviewAsk": {
+    "message": "Enjoying Sombre? A review helps others find it."
+  },
+  "reviewRate": {
+    "message": "Leave a review"
+  },
+  "reviewLater": {
+    "message": "No thanks"
   }
 }
