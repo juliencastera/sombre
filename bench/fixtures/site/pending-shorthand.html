@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Fixture — background shorthand with var() and a later longhand</title>
+    <link rel="stylesheet" href="common.css" />
+    <style>
+      /* As on wikipedia.org: the sidebar fades into the page with a gradient from transparent white. */
+      :root {
+        --background-color-base: #fff;
+      }
+      .sidebar {
+        width: 240px;
+        height: 120px;
+        overflow: auto;
+      }
+      .sidebar::after {
+        content: '';
+        display: block;
+        height: 16px;
+        background: linear-gradient(rgba(255, 255, 255, 0), var(--background-color-base, #fff));
+        background-repeat: no-repeat;
+      }
+    </style>
+  </head>
+  <body>
+    <header class="site"><span class="logo">Encyclopedia</span></header>
+    <main>
+      <nav class="sidebar">Contents</nav>
+    </main>
+  </body>
+</html>

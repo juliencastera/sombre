@@ -226,6 +226,35 @@ export function declarations(
   return out;
 }
 
+/**
+ * `background: linear-gradient(…, var(--x))` followed by a longhand (`background-repeat`)
+ * leaves every other longhand unreadable in the CSSOM, and the shorthand too (Wikipedia's
+ * sidebar fades). The page's computed result is mirrored instead, from the first element
+ * the rule matches now.
+ */
+function computedBackground(style: CSSStyleDeclaration, selectorText: string, options: GenerateOptions): string {
+  if (
+    style.getPropertyValue('background') ||
+    ![...style].includes('background-image') ||
+    style.getPropertyValue('background-image')
+  ) {
+    return '';
+  }
+  for (const selector of selectorText.split(',')) {
+    const pseudo = /::?(before|after)s*$/i.exec(selector);
+    let el: Element | null = null;
+    try {
+      el = document.querySelector(pseudo ? selector.slice(0, pseudo.index) : selector);
+    } catch {
+      // A selector querySelector rejects (:hover…).
+    }
+    if (!el) continue;
+    const computed = getComputedStyle(el, pseudo && `::${pseudo[1]}`);
+    return `background-image:${mirrorValue(computed.backgroundImage, 'bg', options)};background-color:${mirrorValue(computed.backgroundColor, 'bg', options)};`;
+  }
+  return '';
+}
+
 function wrap(prelude: string, body: string): string {
   return body ? `${prelude}{${body}}` : '';
 }
@@ -264,7 +293,10 @@ export function generateRules(rules: CSSRuleList, options: GenerateOptions): str
       const nested = rule.cssRules?.length ? generateRules(rule.cssRules, options) : '';
       const blend = rule.style.getPropertyValue('mix-blend-mode');
       const media = blend !== '' && selectsMedia(rule.selectorText);
-      out += wrap(rule.selectorText, declarations(rule.style, options, false, media) + nested);
+      out += wrap(
+        rule.selectorText,
+        declarations(rule.style, options, false, media) + computedBackground(rule.style, rule.selectorText, options) + nested,
+      );
       // The same blend on the pictures' container (a product gallery) hides them just as well.
       if (!media && DARKENING_BLEND.test(blend.trim()) && !rule.selectorText.includes('::')) {
         const important = rule.style.getPropertyPriority('mix-blend-mode') ? '!important' : '';
