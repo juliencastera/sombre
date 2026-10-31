@@ -26,8 +26,8 @@ between navigations.
 
 ## 2. Rendering architecture (3 layers + native)
 
-1. **Instant base layer** — static CSS (`public/base-dark.css`, `public/base-auto.css`)
-   injected by the browser before first paint: `color-scheme: dark`, dark canvas (top
+1. **Instant base layer** — static CSS generated at build time from the engine's colors, one
+   pair per tone (`base/<tone>.css`, `base/<tone>-auto.css`; `src/engine/base-layer.ts`), injected by the browser before first paint: `color-scheme: dark`, dark canvas (top
    page only: frames stay transparent, see §6; once ready, the engine colors the root only
    while the page leaves `<body>` unpainted, since a root background would make `<body>`
    paint its own box over negative z-index layers) and text, and a "nothing paints light" guard (every element forced dark) until the
@@ -93,6 +93,10 @@ The popup states this and offers "Use Sombre's engine instead" (the site's Dark 
   | High / Élevé | Lc 90 |
 
   Replaces Dark Reader's brightness/contrast/sepia/grayscale sliders.
+- **Tone** (options page): Neutral (white → L 0.20, #161616), Black (L 0, OLED screens), Gray
+  (L 0.28), Sepia (L 0.23, greys and text take a warm hue, h 70). Only the page level and the
+  hue of neutral surfaces, borders and text change; accents keep their colors and the contrast
+  passes still guarantee the text floor. Part of the cache key.
 - **Roles:** a color is transformed according to its use — background, text, border,
   shadow. Light backgrounds map into a narrow dark band (white → L 0.20), steeper near
   white so close surfaces (read/unread rows, hover, zebra stripes) stay apart (#f2f6fc
@@ -312,7 +316,7 @@ As built in M6:
 | Manifest | MV3 |
 | Language | TypeScript (strict) |
 | Extension framework / build | WXT (Vite) |
-| Content script | Vanilla TS, zero dependencies, built as a WXT unlisted script declared in the manifest (no WXT content script runtime). Budget < 40 KB minified, enforced by an E2E test (38.8 KB with frame schemes, the canvas check, blended pictures and SVG artwork; revised from 30 KB, then 34 KB, 37 KB and 38 KB, as contrast passes, native themes, cache, fixes, image analysis, frame schemes and site-compatibility fixes landed). Chrome code-caches extension scripts, so the remaining cost is negligible. The element picker is a separate script injected on demand |
+| Content script | Vanilla TS, zero dependencies, built as a WXT unlisted script declared in the manifest (no WXT content script runtime). Budget < 44 KB minified, enforced by an E2E test (41.2 KB with tones and the schedule; revised from 30 KB, then 34 KB, 37 KB, 38 KB and 40 KB, as contrast passes, native themes, cache, fixes, image analysis, frame schemes and site-compatibility fixes landed). Chrome code-caches extension scripts, so the remaining cost is negligible. The element picker is a separate script injected on demand |
 | Popup / options | Svelte 5 |
 | Unit tests | Vitest (color math, APCA, rule rewriting) |
 | E2E / benchmark | Playwright with extension loaded |

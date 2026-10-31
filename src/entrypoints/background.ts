@@ -1,3 +1,4 @@
+import { baseLayerFile } from '../engine/base-layer.ts';
 import { CACHE_INDEX_KEY, CACHE_PREFIX, evictions, type CacheIndex } from '../shared/cache.ts';
 import { SHARED_FIXES_URL, UNINSTALL_URL } from '../shared/config.ts';
 import { FIXES_PUBLIC_KEY } from '../shared/fixes-key.ts';
@@ -14,7 +15,7 @@ const MAX_CSS_BYTES = 8 * 1024 * 1024;
 const MAX_IMAGE_BYTES = 512 * 1024;
 
 /**
- * The base layer (public/base-*.css) is registered dynamically rather than in
+ * The base layer (src/engine/base-layer.ts, one per tone) is registered dynamically rather than in
  * the manifest so the browser injects it before first paint *only* where dark
  * mode applies: never-sites and sites with a native dark theme are excluded,
  * and "auto" mode uses a prefers-color-scheme media query. No async lookup
@@ -41,13 +42,14 @@ async function syncRegistrations(): Promise<void> {
     scripts.push({
       ...common,
       id: BASE_ID,
-      css: [dark ? 'base-dark.css' : 'base-auto.css'],
+      css: [baseLayerFile(settings.tone, !dark)],
       matches: ['<all_urls>'],
       ...(excluded.length && { excludeMatches: excluded }),
     });
   }
   const forcedPatterns = forced.flatMap(sitePatterns);
-  if (forcedPatterns.length) scripts.push({ ...common, id: FORCED_ID, css: ['base-dark.css'], matches: forcedPatterns });
+  if (forcedPatterns.length)
+    scripts.push({ ...common, id: FORCED_ID, css: [baseLayerFile(settings.tone, false)], matches: forcedPatterns });
 
   const existing = await browser.scripting.getRegisteredContentScripts({ ids: [BASE_ID, FORCED_ID] });
   if (existing.length) await browser.scripting.unregisterContentScripts({ ids: existing.map((script) => script.id) });

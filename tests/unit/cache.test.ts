@@ -13,6 +13,7 @@ describe('cache helpers', () => {
     expect(cacheVersion('1.0.0', 'standard', false)).not.toBe(cacheVersion('1.0.0', 'high', false));
     expect(cacheVersion('1.0.0', 'standard', false)).not.toBe(cacheVersion('1.0.0', 'standard', true));
     expect(cacheVersion('1.0.0', 'standard', false)).not.toBe(cacheVersion('1.0.1', 'standard', false));
+    expect(cacheVersion('1.0.0', 'standard', false)).not.toBe(cacheVersion('1.0.0', 'standard', false, 'black'));
   });
 
   it('merges a page into the site cache, or reports no change', () => {

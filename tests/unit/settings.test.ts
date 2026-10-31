@@ -94,6 +94,7 @@ describe('normalizeSettings', () => {
       mode: 'auto',
       sites: { 'a.com': 'dark' },
       contrast: 'standard',
+      tone: 'neutral',
       sharedFixes: true,
       schedule: { from: 1200, to: 420 },
     });
@@ -104,6 +105,8 @@ describe('normalizeSettings', () => {
     expect(normalizeSettings(undefined)).toEqual(DEFAULT_SETTINGS);
     expect(normalizeSettings({ contrast: 'high' }).contrast).toBe('high');
     expect(normalizeSettings({ contrast: 'max' }).contrast).toBe('standard');
+    expect(normalizeSettings({ tone: 'sepia' }).tone).toBe('sepia');
+    expect(normalizeSettings({ tone: 'pink' }).tone).toBe('neutral');
   });
 
   it('reads native verdicts, including the M1 timestamp format', () => {

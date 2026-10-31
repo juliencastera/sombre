@@ -13,6 +13,10 @@ export type SiteState = 'dark' | 'never';
 /** Global contrast floor (spec §3), replacing brightness/contrast/sepia sliders. */
 export type ContrastLevel = 'soft' | 'standard' | 'high';
 
+/** Tone of the dark surfaces: neutral, true black (OLED screens), a lighter grey, or warm sepia. */
+export type Tone = 'neutral' | 'black' | 'gray' | 'sepia';
+export const TONES: readonly Tone[] = ['neutral', 'black', 'gray', 'sepia'];
+
 /** Minimum APCA |Lc| for body-size text at each level; large text gets 15 less. */
 export const CONTRAST_TARGETS: Record<ContrastLevel, number> = { soft: 60, standard: 75, high: 90 };
 
@@ -21,6 +25,7 @@ export interface Settings {
   /** Keyed by site key (hostname without `www.`); applies to subdomains too. */
   sites: Record<string, SiteState>;
   contrast: ContrastLevel;
+  tone: Tone;
   /** Apply the shared, signed fix list on top of the user's own fixes. */
   sharedFixes: boolean;
   schedule: Schedule;
@@ -49,6 +54,7 @@ export const DEFAULT_SETTINGS: Settings = {
   mode: 'auto',
   sites: {},
   contrast: 'standard',
+  tone: 'neutral',
   sharedFixes: true,
   schedule: { from: 20 * 60, to: 7 * 60 },
 };
@@ -152,7 +158,8 @@ export function normalizeSettings(value: unknown): Settings {
     from: minute(raw.schedule?.from, DEFAULT_SETTINGS.schedule.from),
     to: minute(raw.schedule?.to, DEFAULT_SETTINGS.schedule.to),
   };
-  return { mode, sites, contrast, sharedFixes, schedule };
+  const tone = TONES.includes(raw.tone!) ? raw.tone! : DEFAULT_SETTINGS.tone;
+  return { mode, sites, contrast, tone, sharedFixes, schedule };
 }
 
 export function normalizeNative(value: unknown): Record<string, NativeVerdict> {

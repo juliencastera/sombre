@@ -22,8 +22,8 @@ export interface CacheEntry {
 
 export type CacheIndex = Record<string, { at: number; size: number }>;
 
-export function cacheVersion(extensionVersion: string, contrast: string, native: boolean): string {
-  return `${extensionVersion}|${contrast}|${native ? 'native' : ''}`;
+export function cacheVersion(extensionVersion: string, contrast: string, native: boolean, tone = 'neutral'): string {
+  return `${extensionVersion}|${contrast}|${tone}|${native ? 'native' : ''}`;
 }
 
 /**

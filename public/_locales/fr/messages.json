@@ -314,5 +314,23 @@
   },
   "scheduleTo": {
     "message": "Sombre jusqu’à"
+  },
+  "toneLabel": {
+    "message": "Fond"
+  },
+  "toneHelp": {
+    "message": "Noir économise la batterie des écrans OLED ; Gris est plus doux ; Sépia, plus chaud pour lire le soir."
+  },
+  "toneNeutral": {
+    "message": "Neutre"
+  },
+  "toneBlack": {
+    "message": "Noir"
+  },
+  "toneGray": {
+    "message": "Gris"
+  },
+  "toneSepia": {
+    "message": "Sépia"
   }
 }

@@ -1,6 +1,6 @@
 import { oklchToRgb, rgbToOklch } from '../shared/color/oklab.ts';
 import type { Rgba } from '../shared/color/types.ts';
-import { CONTRAST_TARGETS, type ContrastLevel } from '../shared/settings.ts';
+import { CONTRAST_TARGETS, type ContrastLevel, type Tone } from '../shared/settings.ts';
 
 /** Text lightness band per contrast level: `top - slope × L` for dark and mid-grey source text. */
 const TEXT_CURVES: Record<ContrastLevel, { top: number; slope: number; floor: number }> = {
@@ -20,6 +20,26 @@ export function setContrastLevel(next: ContrastLevel): void {
 
 export function contrastLevel(): ContrastLevel {
   return level;
+}
+
+/**
+ * Page lightness, and the hue and chroma neutral surfaces (`c`) and text (`ink`)
+ * take, per tone. Neutral matches the base layer's #161616 page.
+ */
+const TONE_PARAMS: Record<Tone, { page: number; c: number; ink: number; h: number }> = {
+  neutral: { page: 0.2, c: 0, ink: 0, h: 0 },
+  black: { page: 0, c: 0, ink: 0, h: 0 },
+  gray: { page: 0.28, c: 0, ink: 0, h: 0 },
+  sepia: { page: 0.23, c: 0.02, ink: 0.02, h: 70 },
+};
+
+let tone = TONE_PARAMS.neutral;
+
+/** Switch the tone of dark surfaces used by every later transformation. */
+export function setTone(next: Tone): void {
+  if (tone === TONE_PARAMS[next]) return;
+  tone = TONE_PARAMS[next];
+  cache.clear();
 }
 
 let preserveDark = false;
@@ -61,7 +81,7 @@ export type Role = 'bg' | 'fg' | 'border' | 'shadow' | 'invert' | 'art';
  */
 export const ROLES: readonly Role[] = ['bg', 'fg', 'border', 'shadow'];
 
-/** OKLCH lightness of the page background a white page maps to. Keep in sync with public/base-*.css. */
+/** OKLCH lightness of the page background a white page maps to, with the neutral tone. */
 export const PAGE_BG_L = 0.2;
 
 /**
@@ -77,14 +97,14 @@ export const PAGE_BG_L = 0.2;
 function mapLightness(l: number, role: Role): number {
   switch (role) {
     case 'bg':
-      return l >= 0.5 ? PAGE_BG_L + 0.22 * ((1 - l) / 0.5) ** 0.75 : 0.12 + l * 0.16;
+      return l >= 0.5 ? tone.page + 0.22 * ((1 - l) / 0.5) ** 0.75 : Math.max(0, tone.page - 0.08 + l * 0.16);
     case 'fg':
     case 'art': {
       const { top, slope, floor } = TEXT_CURVES[level];
       return l < 0.75 ? top - l * slope : Math.max(l, floor);
     }
     case 'border':
-      return l >= 0.5 ? 0.28 + (1 - l) * 0.4 : 0.55 - l * 0.4;
+      return l >= 0.5 ? tone.page + 0.08 + (1 - l) * 0.4 : 0.55 - l * 0.4;
     case 'shadow':
       return l < 0.5 ? l : l * 0.2;
     case 'invert':
@@ -170,5 +190,10 @@ function transform(color: Rgba, role: Role): Rgba | null {
   // A logo's brand colors read on any background: only dark ones are lifted, like ink.
   if (role === 'art' && c >= ACCENT_MIN_CHROMA && l >= 0.5) return null;
   if (isAccent(l, c, role)) return { ...oklchToRgb({ l: Math.min(l, ACCENT_MAX_L), c: c * 0.9, h }), a: color.a };
-  return { ...oklchToRgb({ l: mapLightness(l, role), c: mapChroma(l, c, role), h }), a: color.a };
+  // Greys take the tone's hue: sepia surfaces and text are warm.
+  const tint = c < 0.02 && (role === 'fg' || role === 'art' ? tone.ink : role !== 'shadow' && tone.c);
+  return {
+    ...oklchToRgb({ l: mapLightness(l, role), ...(tint ? { c: tint, h: tone.h } : { c: mapChroma(l, c, role), h }) }),
+    a: color.a,
+  };
 }

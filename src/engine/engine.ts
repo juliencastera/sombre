@@ -1,6 +1,6 @@
 import { formatColor, parseColor } from '../shared/color/parse.ts';
 import type { Fix } from '../shared/fixes.ts';
-import type { ContrastLevel, NativeMarker } from '../shared/settings.ts';
+import type { ContrastLevel, NativeMarker, Tone } from '../shared/settings.ts';
 import { ContrastPass } from './contrast.ts';
 import type { GenerateOptions } from './generate.ts';
 import { askParent, serveFrames, type Scheme } from './frames.ts';
@@ -9,7 +9,7 @@ import { MirrorStore } from './mirrors.ts';
 import { applyMarker, findNativeMarkers, pageLooksDark } from './native.ts';
 import { resolveColorInBrowser } from './resolve-color.ts';
 import { Scope, type ScopeContext } from './scope.ts';
-import { contrastLevel, setContrastLevel, setPreserveDark, transformColor } from './transform.ts';
+import { contrastLevel, setContrastLevel, setPreserveDark, setTone, transformColor } from './transform.ts';
 
 /** `off` disables the base layer; anything else (or absent) keeps it. See public/base-*.css. */
 const STATE_ATTR = 'data-sombre';
@@ -189,14 +189,17 @@ export class Engine {
     }
   }
 
-  /** Apply a contrast level; regenerates every mirror when it changes after start. */
-  setContrast(level: ContrastLevel): void {
-    if (level === contrastLevel()) return;
+  #tone: Tone = 'neutral';
+
+  /** Apply a contrast level and a tone; regenerates every mirror when they change after start. */
+  setColors(level: ContrastLevel, tone: Tone): void {
+    if (level === contrastLevel() && tone === this.#tone) return;
     setContrastLevel(level);
+    setTone((this.#tone = tone));
     this.#regenerate();
   }
 
-  /** Colors changed (contrast level, native mode): rebuild every Sombre sheet. */
+  /** Colors changed (contrast level, tone, native mode): rebuild every Sombre sheet. */
   #regenerate(): void {
     this.#guard.replaceSync(guardRules());
     this.#store.invalidateAll();

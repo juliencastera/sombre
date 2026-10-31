@@ -115,7 +115,7 @@ export default defineUnlistedScript(async () => {
     ...(isTop ? [cacheKey] : []),
   ]);
   let settings: Settings = normalizeSettings(stored[SETTINGS_KEY]);
-  engine.setContrast(settings.contrast);
+  engine.setColors(settings.contrast, settings.tone);
   let localFixes = stored[LOCAL_FIXES_KEY] as Record<string, Fix[]> | undefined;
   let sharedFixes = stored[SHARED_FIXES_KEY] as FixList | undefined;
   const applyFixes = () => engine.setFixes(pageFixes(hostname, localFixes, sharedFixes, settings.sharedFixes));
@@ -127,7 +127,7 @@ export default defineUnlistedScript(async () => {
   // Stale-while-revalidate: mirrors of known stylesheets without waiting for the network.
   const buildVersion = `${browser.runtime.getManifest().version}+${__SOMBRE_BUILD__}`;
   const cached = stored[cacheKey] as CacheEntry | undefined;
-  if (cached?.version === cacheVersion(buildVersion, settings.contrast, Boolean(verdict))) {
+  if (cached?.version === cacheVersion(buildVersion, settings.contrast, Boolean(verdict), settings.tone)) {
     engine.seedCache(cached.sheets);
   }
 
@@ -151,7 +151,7 @@ export default defineUnlistedScript(async () => {
     if (SETTINGS_KEY in changes) settings = normalizeSettings(changes[SETTINGS_KEY]!.newValue);
     if (LOCAL_FIXES_KEY in changes || SHARED_FIXES_KEY in changes || SETTINGS_KEY in changes) applyFixes();
     if (!(SETTINGS_KEY in changes)) return;
-    engine.setContrast(settings.contrast);
+    engine.setColors(settings.contrast, settings.tone);
     void update(true);
   });
   osQuery.addEventListener('change', () => void update(true));
@@ -183,7 +183,7 @@ export default defineUnlistedScript(async () => {
       requestIdleCallback(
         async () => {
           const sheets = await engine.cachedSheets();
-          const version = cacheVersion(buildVersion, settings.contrast, engine.native);
+          const version = cacheVersion(buildVersion, settings.contrast, engine.native, settings.tone);
           if (Object.keys(sheets).length) void writeCache(key, version, sheets, cached);
         },
         { timeout: 5000 },

@@ -314,5 +314,23 @@
   },
   "scheduleTo": {
     "message": "Dark until"
+  },
+  "toneLabel": {
+    "message": "Background"
+  },
+  "toneHelp": {
+    "message": "Black saves battery on OLED screens; Gray is softer; Sepia is warmer for reading at night."
+  },
+  "toneNeutral": {
+    "message": "Neutral"
+  },
+  "toneBlack": {
+    "message": "Black"
+  },
+  "toneGray": {
+    "message": "Gray"
+  },
+  "toneSepia": {
+    "message": "Sepia"
   }
 }

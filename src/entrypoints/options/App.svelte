@@ -21,6 +21,7 @@
     type NativeVerdict,
     type Settings,
     type SiteState,
+    type Tone,
   } from '../../shared/settings.ts';
   import Segmented from '../../ui/Segmented.svelte';
 
@@ -210,6 +211,23 @@
         </div>
       </div>
     {/if}
+    <div class="row">
+      <div>
+        <h3>{t('toneLabel')}</h3>
+        <p class="help">{t('toneHelp')}</p>
+      </div>
+      <Segmented
+        label={t('toneLabel')}
+        value={settings.tone}
+        options={[
+          { value: 'neutral', label: t('toneNeutral') },
+          { value: 'black', label: t('toneBlack') },
+          { value: 'gray', label: t('toneGray') },
+          { value: 'sepia', label: t('toneSepia') },
+        ] satisfies { value: Tone; label: string }[]}
+        onchange={(tone) => void save({ ...settings, tone })}
+      />
+    </div>
     <div class="row">
       <div>
         <h3>{t('contrast')}</h3>

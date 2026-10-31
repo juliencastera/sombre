@@ -1,4 +1,5 @@
 import { defineConfig } from 'wxt';
+import { baseLayers } from './src/engine/base-layer.ts';
 
 export default defineConfig({
   srcDir: 'src',
@@ -25,6 +26,10 @@ export default defineConfig({
   // even when the version number does not change (local builds).
   vite: () => ({ define: { __SOMBRE_BUILD__: JSON.stringify(Date.now().toString(36)) } }),
   hooks: {
+    // One base layer per tone (src/engine/base-layer.ts), from the engine's own colors.
+    'build:publicAssets': (_, files) => {
+      for (const [relativeDest, contents] of Object.entries(baseLayers())) files.push({ relativeDest, contents });
+    },
     'build:manifestGenerated': (_, manifest) => {
       // The engine is an unlisted script (src/entrypoints/sombre.ts) to avoid WXT's content script runtime.
       manifest.content_scripts ??= [];
