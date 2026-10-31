@@ -158,7 +158,11 @@ export class Engine {
       this.#frameScheme = 'dark';
     }
     this.#tellFrames = serveFrames(osDark);
-    const options: GenerateOptions = { resolveColor: resolveColorInBrowser, icon: (url) => this.#icons.use(url) };
+    const options: GenerateOptions = {
+      resolveColor: resolveColorInBrowser,
+      icon: (url) => this.#icons.use(url),
+      inverts: (selector) => this.#icons.invertedBy(selector),
+    };
     this.#store = new MirrorStore(options, () => this.#scheduleAll());
     this.#icons = new DarkIcons(this.#store.create());
     this.#guard.replaceSync(guardRules());

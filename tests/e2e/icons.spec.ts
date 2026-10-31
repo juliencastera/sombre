@@ -21,6 +21,14 @@ test('dark icons get an inverted copy, light pictures stay', async ({ context })
   expect(await backgroundImage(page, '.photo')).toMatch(/^url\("https:\/\/sombre-bench\.dev\/icons\/photo\.svg"\)$/);
 });
 
+test('icons the page inverts itself keep their original image', async ({ context }) => {
+  const page = await context.newPage();
+  await page.goto(fixture('icons'));
+  await expect.poll(() => backgroundImage(page, '.mail')).toContain('data:image/png');
+  // Its own invert(1) already shows it light: our inverted copy would turn it dark again.
+  await expect.poll(() => backgroundImage(page, '.x-invert')).toContain('icons/mail.png');
+});
+
 test('later rules keep overriding earlier ones the mirrors change', async ({ context }) => {
   const page = await context.newPage();
   await page.goto(fixture('icons'));
@@ -46,9 +54,15 @@ test('icon analyses are cached with the site', async ({ context, worker }) => {
     worker.evaluate(async () => {
       const entry = (await chrome.storage.local.get('sombre:cache:sombre-bench.dev'))['sombre:cache:sombre-bench.dev'];
       return Object.entries<string>(entry?.sheets ?? {})
-        .filter(([key]) => key.startsWith('icon:'))
+        .filter(([key]) => key.startsWith('icon:') && key !== 'icon:inverted')
         .map(([, result]) => (result.startsWith('data:') ? result.slice(0, 14) : result))
         .sort();
     });
   await expect.poll(icons).toEqual(['-', 'data:image/png', 'data:image/svg', 'data:image/svg']);
+  // With the elements the page inverts itself, so their icons are right from the first frame.
+  const inverted = await worker.evaluate(
+    async () =>
+      (await chrome.storage.local.get('sombre:cache:sombre-bench.dev'))['sombre:cache:sombre-bench.dev'].sheets['icon:inverted'],
+  );
+  expect(JSON.parse(inverted)).toEqual(['.x-invert']);
 });

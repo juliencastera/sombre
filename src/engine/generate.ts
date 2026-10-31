@@ -10,6 +10,8 @@ export interface GenerateOptions extends RewriteOptions {
   resolveImport?: (url: string) => string | null;
   /** Custom property standing for the dark version of a background image (see DarkIcons), or null to leave it. */
   icon?: (url: string) => string | null;
+  /** A rule inverts its elements itself (`filter: invert(1)`, see DarkIcons.invertedBy). */
+  inverts?: (selector: string) => void;
   /**
    * The sheet belongs to an SVG (a logo or an illustration exported with its `<style>`):
    * `ink` maps its paints with the `art` role, `keep` leaves them as drawn (see artMode).
@@ -291,6 +293,8 @@ export function generateRules(rules: CSSRuleList, options: GenerateOptions): str
     const rule = rules[i]!;
     if (rule instanceof CSSStyleRule) {
       const nested = rule.cssRules?.length ? generateRules(rule.cssRules, options) : '';
+      const invert = /invert\(\s*([\d.]*)(%?)/.exec(rule.style.getPropertyValue('filter'));
+      if (invert && (invert[1] ? +invert[1] / (invert[2] ? 100 : 1) : 1) >= 0.5) options.inverts?.(rule.selectorText);
       const blend = rule.style.getPropertyValue('mix-blend-mode');
       const media = blend !== '' && selectsMedia(rule.selectorText);
       out += wrap(

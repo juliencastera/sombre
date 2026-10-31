@@ -31,6 +31,10 @@
       .mail {
         background: url(icons/mail.png) no-repeat;
       }
+      /* As on facebook.com: a dark sprite shown white over a video by its own filter, set by another class. */
+      .x-invert {
+        filter: invert(1);
+      }
       .photo {
         width: 48px;
         height: 32px;
@@ -59,6 +63,7 @@
   <body>
     <div class="compose">Compose</div>
     <span class="icon mail"></span>
+    <span class="icon mail x-invert"></span>
     <span class="icon photo"></span>
     <span class="icon masked"></span>
     <span class="row"><span class="icon box"></span><span class="icon marker on"></span></span>

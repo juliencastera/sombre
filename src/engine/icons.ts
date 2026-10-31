@@ -18,6 +18,8 @@ const INVERT = 'invert(1) hue-rotate(180deg)';
 const KEEP = '-';
 /** Prefix of icon results in the per-site cache, next to stylesheet URLs. */
 export const ICON_CACHE_PREFIX = 'icon:';
+/** Cache key of the selectors the page inverts itself. */
+const INVERTED_KEY = 'inverted';
 
 /** Custom property standing for the dark-mode version of the image at `url`. */
 export function iconVariable(url: string): string {
@@ -81,6 +83,13 @@ export class DarkIcons {
   /** Result by custom property: an inverted data URL, or KEEP. */
   readonly #done = new Map<string, string>();
   readonly #pending = new Map<string, Promise<void>>();
+  /**
+   * Selectors of rules that invert their elements themselves: a dark sprite shown
+   * white over a video with `filter: invert(1)` (Facebook). Our inverted copy would
+   * turn it back black, so these elements and their content keep the original image.
+   */
+  readonly #invertedBy = new Set<string>();
+  #reset = false;
 
   constructor(sheet: CSSStyleSheet) {
     this.sheet = sheet;
@@ -104,6 +113,22 @@ export class DarkIcons {
     return done === KEEP ? null : key;
   }
 
+  invertedBy(selector: string): void {
+    if (this.#invertedBy.has(selector)) return;
+    this.#invertedBy.add(selector);
+    this.#refreshReset();
+  }
+
+  /** First rule of the sheet: the inverted icons are undefined again on the elements the page inverts. */
+  #refreshReset(): void {
+    if (this.#reset) this.sheet.deleteRule(0);
+    const vars = [...this.#done].filter(([, result]) => result !== KEEP);
+    this.#reset = Boolean(this.#invertedBy.size && vars.length);
+    if (this.#reset) {
+      this.sheet.insertRule(`:is(${[...this.#invertedBy].join(',')}){${vars.map(([key]) => `${key}:initial`).join(';')}}`, 0);
+    }
+  }
+
   /** Resolves once every analysis started so far is done. */
   async settled(): Promise<void> {
     while (this.#pending.size) await Promise.all(this.#pending.values());
@@ -111,7 +136,9 @@ export class DarkIcons {
 
   /** Results from a previous visit (see snapshot). */
   seed(cached: Record<string, string>): void {
+    for (const selector of JSON.parse(cached[ICON_CACHE_PREFIX + INVERTED_KEY] ?? '[]') as string[]) this.invertedBy(selector);
     for (const [key, result] of Object.entries(cached)) {
+      if (key === ICON_CACHE_PREFIX + INVERTED_KEY) continue;
       if (key.startsWith(ICON_CACHE_PREFIX) && !this.#done.has(key.slice(ICON_CACHE_PREFIX.length))) {
         this.#set(key.slice(ICON_CACHE_PREFIX.length), result);
       }
@@ -122,11 +149,14 @@ export class DarkIcons {
   snapshot(): Record<string, string> {
     const out: Record<string, string> = {};
     for (const [key, result] of this.#done) out[ICON_CACHE_PREFIX + key] = result;
+    if (this.#invertedBy.size) out[ICON_CACHE_PREFIX + INVERTED_KEY] = JSON.stringify([...this.#invertedBy]);
     return out;
   }
 
   #set(key: string, result: string): void {
     this.#done.set(key, result);
-    if (result !== KEEP) this.sheet.insertRule(`:root{${key}:url(${JSON.stringify(result)})}`, this.sheet.cssRules.length);
+    if (result === KEEP) return;
+    this.sheet.insertRule(`:root{${key}:url(${JSON.stringify(result)})}`, this.sheet.cssRules.length);
+    if (this.#invertedBy.size) this.#refreshReset();
   }
 }
