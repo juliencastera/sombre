@@ -200,11 +200,15 @@ mirrored before the next paint.
 
 ## 7. Activation model & UX
 
-- **Global default:** `Auto (follow OS)` (install default) / `Dark` / `Light`.
+- **Global default:** `Auto (follow OS)` (install default) / `Dark` / `Light` / `Schedule`.
 - **Per site (tri-state):** `Follow default` · `Always dark` · `Never`.
 - The popup always shows **why** a site is in its current state
   (e.g. "Dark — global default (Auto)", "Light — site exception", "✓ Native dark theme").
-- No scheduled mode (the OS handles it; Auto inherits it).
+- **Schedule** (dark hours, local time, may span midnight; 20:00 → 07:00 by default): Windows does
+  not switch to dark in the evening by itself, so Auto is not enough there. The background
+  registers the dark base layer while the schedule is dark and re-registers it at the next switch
+  (`chrome.alarms`); open pages switch on time with their own timer. Sunrise/sunset would need
+  the user's location: not done.
 
 ### Popup (~360 px)
 

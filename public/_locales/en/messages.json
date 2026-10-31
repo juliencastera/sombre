@@ -102,7 +102,7 @@
     "message": "Default for all sites"
   },
   "defaultModeHelp": {
-    "message": "Auto follows your system's light or dark setting."
+    "message": "Auto follows your system's light or dark setting; Schedule, the hours you choose."
   },
   "contrastHelp": {
     "message": "Minimum readability of text: Soft (APCA Lc 60), Standard (75), High (90). Large text gets 15 less."
@@ -293,5 +293,26 @@
   },
   "reviewLater": {
     "message": "No thanks"
+  },
+  "modeSchedule": {
+    "message": "Schedule"
+  },
+  "reasonScheduleDark": {
+    "message": "Dark — global default (schedule)"
+  },
+  "reasonScheduleLight": {
+    "message": "Light — global default (schedule)"
+  },
+  "scheduleLabel": {
+    "message": "Dark hours"
+  },
+  "scheduleHelp": {
+    "message": "Sites are dark between these times, then light. Open pages switch on time."
+  },
+  "scheduleFrom": {
+    "message": "Dark from"
+  },
+  "scheduleTo": {
+    "message": "Dark until"
   }
 }

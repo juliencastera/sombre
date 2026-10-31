@@ -4,10 +4,11 @@ import { FIXES_PUBLIC_KEY } from '../shared/fixes-key.ts';
 import { SHARED_FIXES_KEY, verifyFixList, type FixList } from '../shared/fixes.ts';
 import type { ContentRequest, FetchCssRequest, FetchImageRequest, FetchResponse } from '../shared/messages.ts';
 import { REVIEW_KEY, type ReviewState } from '../shared/review.ts';
-import { NATIVE_KEY, normalizeSettings, SETTINGS_KEY, sitePatterns } from '../shared/settings.ts';
+import { inSchedule, NATIVE_KEY, nextSwitch, normalizeSettings, SETTINGS_KEY, sitePatterns } from '../shared/settings.ts';
 
 const BASE_ID = 'sombre-base';
 const FORCED_ID = 'sombre-base-forced';
+const SCHEDULE_ALARM = 'sombre:schedule';
 const MAX_CSS_BYTES = 8 * 1024 * 1024;
 /** Icons are small; anything larger is a photo or a banner, never inverted. */
 const MAX_IMAGE_BYTES = 512 * 1024;
@@ -17,7 +18,9 @@ const MAX_IMAGE_BYTES = 512 * 1024;
  * the manifest so the browser injects it before first paint *only* where dark
  * mode applies: never-sites and sites with a native dark theme are excluded,
  * and "auto" mode uses a prefers-color-scheme media query. No async lookup
- * stands between navigation and the first dark frame.
+ * stands between navigation and the first dark frame. In "schedule" mode the
+ * dark base layer is registered while the schedule is dark, and an alarm swaps
+ * it at the next switch.
  */
 async function syncRegistrations(): Promise<void> {
   const stored = await browser.storage.local.get([SETTINGS_KEY, NATIVE_KEY]);
@@ -30,11 +33,15 @@ async function syncRegistrations(): Promise<void> {
 
   const scripts: Parameters<typeof browser.scripting.registerContentScripts>[0] = [];
   const common = { runAt: 'document_start', allFrames: true, matchOriginAsFallback: true, persistAcrossSessions: true } as const;
-  if (settings.mode !== 'light') {
+  if (settings.mode === 'schedule') {
+    void browser.alarms.create(SCHEDULE_ALARM, { when: Date.now() + nextSwitch(settings.schedule) });
+  } else void browser.alarms.clear(SCHEDULE_ALARM);
+  const dark = settings.mode === 'dark' || (settings.mode === 'schedule' && inSchedule(settings.schedule));
+  if (dark || settings.mode === 'auto') {
     scripts.push({
       ...common,
       id: BASE_ID,
-      css: [settings.mode === 'dark' ? 'base-dark.css' : 'base-auto.css'],
+      css: [dark ? 'base-dark.css' : 'base-auto.css'],
       matches: ['<all_urls>'],
       ...(excluded.length && { excludeMatches: excluded }),
     });
@@ -155,6 +162,7 @@ export default defineBackground(() => {
   browser.runtime.onStartup.addListener(queueSync);
   browser.alarms.onAlarm.addListener((alarm) => {
     if (alarm.name === FIXES_ALARM) void refreshSharedFixes();
+    if (alarm.name === SCHEDULE_ALARM) queueSync();
   });
   browser.storage.onChanged.addListener((changes, area) => {
     if (area !== 'local') return;

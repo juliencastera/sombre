@@ -1,5 +1,11 @@
-/** Global default (spec §7). `auto` follows the OS color scheme. */
-export type Mode = 'auto' | 'dark' | 'light';
+/** Global default (spec §7). `auto` follows the OS color scheme, `schedule` the clock. */
+export type Mode = 'auto' | 'dark' | 'light' | 'schedule';
+
+/** Dark from `from` to `to`, in minutes after local midnight; spans midnight when `from` > `to`. */
+export interface Schedule {
+  from: number;
+  to: number;
+}
 
 /** Per-site exception. Absent = follow the global default. */
 export type SiteState = 'dark' | 'never';
@@ -17,6 +23,7 @@ export interface Settings {
   contrast: ContrastLevel;
   /** Apply the shared, signed fix list on top of the user's own fixes. */
   sharedFixes: boolean;
+  schedule: Schedule;
 }
 
 export const SETTINGS_KEY = 'sombre:settings';
@@ -38,9 +45,16 @@ export interface NativeVerdict {
   marker?: NativeMarker;
 }
 
-export const DEFAULT_SETTINGS: Settings = { mode: 'auto', sites: {}, contrast: 'standard', sharedFixes: true };
+export const DEFAULT_SETTINGS: Settings = {
+  mode: 'auto',
+  sites: {},
+  contrast: 'standard',
+  sharedFixes: true,
+  schedule: { from: 20 * 60, to: 7 * 60 },
+};
 
-export type Reason = 'site-dark' | 'site-never' | 'mode-dark' | 'mode-light' | 'auto-dark' | 'auto-light';
+export type Reason =
+  'site-dark' | 'site-never' | 'mode-dark' | 'mode-light' | 'auto-dark' | 'auto-light' | 'schedule-dark' | 'schedule-light';
 
 export interface Effective {
   on: boolean;
@@ -64,19 +78,42 @@ export function findSiteKey(keys: Iterable<string>, hostname: string): string | 
   return best;
 }
 
-export function resolveEffective(settings: Settings, hostname: string, osDark: boolean): Effective {
+const DAY = 24 * 60;
+const minutes = (date: Date) => date.getHours() * 60 + date.getMinutes();
+
+/** Whether the schedule is dark at `date` (local time). */
+export function inSchedule({ from, to }: Schedule, date = new Date()): boolean {
+  const m = minutes(date);
+  return from <= to ? m >= from && m < to : m >= from || m < to;
+}
+
+/** Milliseconds from `date` until the schedule next switches. */
+export function nextSwitch({ from, to }: Schedule, date = new Date()): number {
+  const elapsed = (date.getSeconds() * 1000 + date.getMilliseconds()) / 60_000;
+  const wait = (target: number) => (((target - minutes(date) + DAY - 1) % DAY) + 1 - elapsed) * 60_000;
+  return Math.min(wait(from), wait(to));
+}
+
+export function resolveEffective(settings: Settings, hostname: string, osDark: boolean, now = new Date()): Effective {
   const key = findSiteKey(Object.keys(settings.sites), hostname);
   const state = key ? settings.sites[key] : undefined;
   if (state === 'dark') return { on: true, reason: 'site-dark' };
   if (state === 'never') return { on: false, reason: 'site-never' };
   if (settings.mode === 'dark') return { on: true, reason: 'mode-dark' };
   if (settings.mode === 'light') return { on: false, reason: 'mode-light' };
+  if (settings.mode === 'schedule') {
+    return inSchedule(settings.schedule, now) ? { on: true, reason: 'schedule-dark' } : { on: false, reason: 'schedule-light' };
+  }
   return osDark ? { on: true, reason: 'auto-dark' } : { on: false, reason: 'auto-light' };
 }
 
 /** Whether the global default (ignoring site exceptions) is dark. */
 export function defaultIsOn(settings: Settings, osDark: boolean): boolean {
-  return settings.mode === 'dark' || (settings.mode === 'auto' && osDark);
+  return (
+    settings.mode === 'dark' ||
+    (settings.mode === 'auto' && osDark) ||
+    (settings.mode === 'schedule' && inSchedule(settings.schedule))
+  );
 }
 
 /**
@@ -102,14 +139,20 @@ export function sitePatterns(key: string): string[] {
 
 export function normalizeSettings(value: unknown): Settings {
   const raw = (value ?? {}) as Partial<Settings>;
-  const mode = raw.mode === 'dark' || raw.mode === 'light' || raw.mode === 'auto' ? raw.mode : DEFAULT_SETTINGS.mode;
+  const mode = ['auto', 'dark', 'light', 'schedule'].includes(raw.mode as string) ? raw.mode! : DEFAULT_SETTINGS.mode;
   const sites: Record<string, SiteState> = {};
   for (const [key, state] of Object.entries(raw.sites ?? {})) {
     if (state === 'dark' || state === 'never') sites[key] = state;
   }
   const contrast = raw.contrast && raw.contrast in CONTRAST_TARGETS ? raw.contrast : DEFAULT_SETTINGS.contrast;
   const sharedFixes = typeof raw.sharedFixes === 'boolean' ? raw.sharedFixes : DEFAULT_SETTINGS.sharedFixes;
-  return { mode, sites, contrast, sharedFixes };
+  const minute = (value: unknown, fallback: number) =>
+    Number.isInteger(value) && (value as number) >= 0 && (value as number) < DAY ? (value as number) : fallback;
+  const schedule = {
+    from: minute(raw.schedule?.from, DEFAULT_SETTINGS.schedule.from),
+    to: minute(raw.schedule?.to, DEFAULT_SETTINGS.schedule.to),
+  };
+  return { mode, sites, contrast, sharedFixes, schedule };
 }
 
 export function normalizeNative(value: unknown): Record<string, NativeVerdict> {

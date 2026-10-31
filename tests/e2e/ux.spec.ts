@@ -110,6 +110,35 @@ test('the options page changes global settings', async ({ openOptions, settings 
   await expect(options.getByTestId('shortcut')).toHaveText('Alt+Shift+D');
 });
 
+test('the schedule turns sites dark during its hours only', async ({ context, openOptions, openPopup, settings }) => {
+  const page = await context.newPage();
+  await page.goto(fixture('basic'));
+  await expect.poll(() => sombreState(page)).toBe('on');
+
+  const options = await openOptions();
+  await options.getByRole('radiogroup', { name: 'Default for all sites' }).getByRole('radio', { name: 'Schedule' }).click();
+  const time = (minutes: number) => {
+    const m = (minutes + 1440) % 1440;
+    return `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
+  };
+  const now = new Date().getHours() * 60 + new Date().getMinutes();
+  // Hours that exclude now: the page turns light, open or reloaded.
+  await options.getByLabel('Dark from').fill(time(now + 120));
+  await options.getByLabel('Dark until').fill(time(now + 240));
+  await expect.poll(async () => (await settings()).mode).toBe('schedule');
+  await expect.poll(() => sombreState(page)).toBe('off');
+  await page.reload();
+  await expect.poll(() => sombreState(page)).toBe('off');
+  const popup = await openPopup(page);
+  await expect(popup.getByTestId('status')).toHaveText('Light — global default (schedule)');
+
+  // Hours around now: dark again.
+  await options.getByLabel('Dark from').fill(time(now - 120));
+  await expect.poll(() => sombreState(page)).toBe('on');
+  await page.reload();
+  await expect.poll(() => sombreState(page)).toBe('on');
+});
+
 test('the welcome page explains the button, the shortcut and fixes', async ({ context, extensionId }) => {
   const welcome = await context.newPage();
   await welcome.goto(`chrome-extension://${extensionId}/welcome.html`);

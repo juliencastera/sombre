@@ -102,7 +102,7 @@
     "message": "Par défaut sur tous les sites"
   },
   "defaultModeHelp": {
-    "message": "Auto suit le réglage clair ou sombre de votre système."
+    "message": "Auto suit le réglage clair ou sombre de votre système ; Horaires, les heures que vous choisissez."
   },
   "contrastHelp": {
     "message": "Lisibilité minimale du texte : Doux (APCA Lc 60), Standard (75), Élevé (90). Le grand texte a 15 de moins."
@@ -293,5 +293,26 @@
   },
   "reviewLater": {
     "message": "Non merci"
+  },
+  "modeSchedule": {
+    "message": "Horaires"
+  },
+  "reasonScheduleDark": {
+    "message": "Sombre — réglage global (horaires)"
+  },
+  "reasonScheduleLight": {
+    "message": "Clair — réglage global (horaires)"
+  },
+  "scheduleLabel": {
+    "message": "Heures en sombre"
+  },
+  "scheduleHelp": {
+    "message": "Les sites sont sombres entre ces deux heures, puis clairs. Les pages ouvertes basculent à l’heure."
+  },
+  "scheduleFrom": {
+    "message": "Sombre à partir de"
+  },
+  "scheduleTo": {
+    "message": "Sombre jusqu’à"
   }
 }

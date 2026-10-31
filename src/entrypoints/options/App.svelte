@@ -81,6 +81,15 @@
     void save({ ...settings, sites: next });
   }
 
+  const toTime = (minutes: number) =>
+    `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
+
+  function setScheduleTime(edge: 'from' | 'to', value: string) {
+    const [hours, minutes] = value.split(':').map(Number);
+    if (hours === undefined || minutes === undefined || Number.isNaN(hours + minutes)) return;
+    void save({ ...settings, schedule: { ...settings.schedule, [edge]: hours * 60 + minutes } });
+  }
+
   async function forgetNative(key: string) {
     const next = { ...native };
     delete next[key];
@@ -173,10 +182,34 @@
           { value: 'auto', label: t('modeAuto') },
           { value: 'dark', label: t('modeDark') },
           { value: 'light', label: t('modeLight') },
+          { value: 'schedule', label: t('modeSchedule') },
         ] satisfies { value: Mode; label: string }[]}
         onchange={(mode) => void save({ ...settings, mode })}
       />
     </div>
+    {#if settings.mode === 'schedule'}
+      <div class="row">
+        <div>
+          <h3>{t('scheduleLabel')}</h3>
+          <p class="help">{t('scheduleHelp')}</p>
+        </div>
+        <div class="inline">
+          <input
+            type="time"
+            aria-label={t('scheduleFrom')}
+            value={toTime(settings.schedule.from)}
+            onchange={(event) => setScheduleTime('from', event.currentTarget.value)}
+          />
+          <span aria-hidden="true">→</span>
+          <input
+            type="time"
+            aria-label={t('scheduleTo')}
+            value={toTime(settings.schedule.to)}
+            onchange={(event) => setScheduleTime('to', event.currentTarget.value)}
+          />
+        </div>
+      </div>
+    {/if}
     <div class="row">
       <div>
         <h3>{t('contrast')}</h3>
@@ -376,6 +409,15 @@
     gap: 12px;
     align-items: center;
     justify-content: flex-end;
+  }
+
+  input[type='time'] {
+    padding: 4px 8px;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    background: var(--surface-2);
+    color: var(--text-1);
+    font: inherit;
   }
 
   kbd {

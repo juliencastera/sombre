@@ -27,6 +27,8 @@
     'mode-light': 'reasonModeLight',
     'auto-dark': 'reasonAutoDark',
     'auto-light': 'reasonAutoLight',
+    'schedule-dark': 'reasonScheduleDark',
+    'schedule-light': 'reasonScheduleLight',
   };
 
   const osDark = matchMedia('(prefers-color-scheme: dark)').matches;
@@ -174,6 +176,7 @@
           <option value="auto">{t('modeAuto')}</option>
           <option value="dark">{t('modeDark')}</option>
           <option value="light">{t('modeLight')}</option>
+          <option value="schedule">{t('modeSchedule')}</option>
         </select>
       </label>
       <button type="button" class="link-button" onclick={() => browser.runtime.openOptionsPage()}>{t('options')}</button>

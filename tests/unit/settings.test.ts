@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_SETTINGS,
   findSiteKey,
+  inSchedule,
+  nextSwitch,
   normalizeNative,
   normalizeSettings,
   resolveEffective,
@@ -43,6 +45,32 @@ describe('resolveEffective', () => {
   });
 });
 
+describe('schedule', () => {
+  const at = (h: number, m = 0, sec = 0) => new Date(2026, 9, 31, h, m, sec);
+  const night = { from: 20 * 60, to: 7 * 60 };
+
+  it('is dark between the two times, across midnight', () => {
+    expect(inSchedule(night, at(19, 59))).toBe(false);
+    expect(inSchedule(night, at(20))).toBe(true);
+    expect(inSchedule(night, at(3))).toBe(true);
+    expect(inSchedule(night, at(7))).toBe(false);
+    expect(inSchedule({ from: 9 * 60, to: 17 * 60 }, at(12))).toBe(true);
+    expect(inSchedule({ from: 9 * 60, to: 17 * 60 }, at(18))).toBe(false);
+  });
+
+  it('counts down to the next switch', () => {
+    expect(nextSwitch(night, at(19, 59, 30))).toBe(30_000);
+    expect(nextSwitch(night, at(20))).toBe(11 * 3_600_000);
+    expect(nextSwitch(night, at(12))).toBe(8 * 3_600_000);
+  });
+
+  it('sets the default of every site', () => {
+    const s = settings({ mode: 'schedule', schedule: night });
+    expect(resolveEffective(s, 'a.com', false, at(22))).toEqual({ on: true, reason: 'schedule-dark' });
+    expect(resolveEffective(s, 'a.com', true, at(12))).toEqual({ on: false, reason: 'schedule-light' });
+  });
+});
+
 describe('toggleSite', () => {
   it('creates an exception opposite to the default', () => {
     expect(toggleSite(settings(), 'a.com', true).sites).toEqual({ 'a.com': 'never' });
@@ -67,6 +95,11 @@ describe('normalizeSettings', () => {
       sites: { 'a.com': 'dark' },
       contrast: 'standard',
       sharedFixes: true,
+      schedule: { from: 1200, to: 420 },
+    });
+    expect(normalizeSettings({ mode: 'schedule', schedule: { from: 1500, to: 60 } })).toMatchObject({
+      mode: 'schedule',
+      schedule: { from: 1200, to: 60 },
     });
     expect(normalizeSettings(undefined)).toEqual(DEFAULT_SETTINGS);
     expect(normalizeSettings({ contrast: 'high' }).contrast).toBe('high');

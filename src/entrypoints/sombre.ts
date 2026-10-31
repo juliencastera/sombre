@@ -13,6 +13,7 @@ import type { ContentRequest, PageState } from '../shared/messages.ts';
 import {
   findSiteKey,
   NATIVE_KEY,
+  nextSwitch,
   normalizeNative,
   normalizeSettings,
   resolveEffective,
@@ -130,7 +131,11 @@ export default defineUnlistedScript(async () => {
     engine.seedCache(cached.sheets);
   }
 
+  // Open pages follow the schedule as it switches, not only new ones.
+  let switchTimer: ReturnType<typeof setTimeout> | undefined;
   const update = async (animate: boolean) => {
+    clearTimeout(switchTimer);
+    if (settings.mode === 'schedule') switchTimer = setTimeout(() => void update(true), nextSwitch(settings.schedule) + 1000);
     const effective = resolveEffective(settings, hostname, osQuery.matches);
     await engine.setEnabled(effective.on, { animate, ignoreNative: effective.reason === 'site-dark' });
     // A site previously detected as native that no longer is must get the base layer back.
