@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.1.0](https://github.com/juliencastera/sombre/compare/v1.0.2...v1.1.0) (2026-10-31)
+
+
+### Features
+
+* ask why on uninstall ([e8a94ea](https://github.com/juliencastera/sombre/commit/e8a94ea4bde2cbe090ef6f37054cbc6912bc50d5))
+* **manifest:** put the main keywords in the store name ([9fd682b](https://github.com/juliencastera/sombre/commit/9fd682bc6113dad6e473e014d21ad9798fe090a6))
+* open a welcome page on first install ([8f9614d](https://github.com/juliencastera/sombre/commit/8f9614d4aa00efd537b60d61c7433b567c74d741))
+* **popup:** ask once for a store review after two weeks ([cdfe87d](https://github.com/juliencastera/sombre/commit/cdfe87d965a1517ae7286d805ebd842d0d1cd893))
+
 ## [1.0.2](https://github.com/juliencastera/sombre/compare/v1.0.1...v1.0.2) (2026-10-30)
 
 
