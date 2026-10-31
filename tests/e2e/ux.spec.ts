@@ -139,6 +139,27 @@ test('the schedule turns sites dark during its hours only', async ({ context, op
   await expect.poll(() => sombreState(page)).toBe('on');
 });
 
+test('the toolbar icon is greyed out where Sombre is off', async ({ context, worker, pressShortcut }) => {
+  // Record what the background shows; the extension API has no getter for the icon.
+  await worker.evaluate(() => {
+    const action = (chrome as unknown as { action: { setIcon(details: object): Promise<void> } }).action;
+    const setIcon = action.setIcon.bind(action);
+    const shown: string[] = ((globalThis as unknown as { shown: string[] }).shown = []);
+    action.setIcon = (details: { imageData?: unknown }) =>
+      setIcon(details).then(() => void shown.push(details.imageData ? 'off' : 'on'));
+  });
+  const shown = () => worker.evaluate(() => (globalThis as unknown as { shown: string[] }).shown.at(-1));
+
+  const page = await context.newPage();
+  await page.goto(fixture('basic'));
+  await expect.poll(shown).toBe('on');
+  await pressShortcut();
+  await expect.poll(() => sombreState(page)).toBe('off');
+  await expect.poll(shown).toBe('off');
+  await pressShortcut();
+  await expect.poll(shown).toBe('on');
+});
+
 test('the welcome page explains the button, the shortcut and fixes', async ({ context, extensionId }) => {
   const welcome = await context.newPage();
   await welcome.goto(`chrome-extension://${extensionId}/welcome.html`);

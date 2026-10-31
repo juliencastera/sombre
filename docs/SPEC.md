@@ -206,6 +206,8 @@ mirrored before the next paint.
 
 - **Global default:** `Auto (follow OS)` (install default) / `Dark` / `Light` / `Schedule`.
 - **Per site (tri-state):** `Follow default` · `Always dark` · `Never`.
+- The toolbar icon shows the state: greyed out and faded on tabs where Sombre is off (the
+  page's top frame reports it after each change; the grey icon is drawn once from the color one).
 - The popup always shows **why** a site is in its current state
   (e.g. "Dark — global default (Auto)", "Light — site exception", "✓ Native dark theme").
 - **Schedule** (dark hours, local time, may span midnight; 20:00 → 07:00 by default): Windows does

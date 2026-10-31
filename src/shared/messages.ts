@@ -15,6 +15,12 @@ export interface FetchImageRequest {
 /** The stylesheet's text, or the image as a data URL. */
 export type FetchResponse = { ok: true; text: string } | { ok: false; error: string };
 
+/** Content script (top frame) → background: whether the page is dark, shown on the toolbar icon. */
+export interface PageStateMessage {
+  type: 'sombre:state';
+  on: boolean;
+}
+
 /** Background → content script (top frame): the keyboard shortcut was pressed. */
 export interface ToggleSiteRequest {
   type: 'sombre:toggle-site';

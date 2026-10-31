@@ -3,7 +3,7 @@ import { CACHE_INDEX_KEY, CACHE_PREFIX, evictions, type CacheIndex } from '../sh
 import { SHARED_FIXES_URL, UNINSTALL_URL } from '../shared/config.ts';
 import { FIXES_PUBLIC_KEY } from '../shared/fixes-key.ts';
 import { SHARED_FIXES_KEY, verifyFixList, type FixList } from '../shared/fixes.ts';
-import type { ContentRequest, FetchCssRequest, FetchImageRequest, FetchResponse } from '../shared/messages.ts';
+import type { ContentRequest, FetchCssRequest, FetchImageRequest, FetchResponse, PageStateMessage } from '../shared/messages.ts';
 import { REVIEW_KEY, type ReviewState } from '../shared/review.ts';
 import { inSchedule, NATIVE_KEY, nextSwitch, normalizeSettings, SETTINGS_KEY, sitePatterns } from '../shared/settings.ts';
 
@@ -152,6 +152,33 @@ async function startReviewClock(): Promise<void> {
   await browser.storage.local.set({ [REVIEW_KEY]: state });
 }
 
+const ICON_SIZES = [16, 32] as const;
+let offIcon: Promise<Record<number, ImageData>> | null = null;
+
+/** The toolbar icon, greyed out and faded: Sombre is off on this site. */
+async function greyIcon(): Promise<Record<number, ImageData>> {
+  const icons: Record<number, ImageData> = {};
+  for (const size of ICON_SIZES) {
+    const bitmap = await createImageBitmap(await (await fetch(browser.runtime.getURL(`/icon/${size}.png`))).blob());
+    const context = new OffscreenCanvas(size, size).getContext('2d')!;
+    context.drawImage(bitmap, 0, 0, size, size);
+    const image = context.getImageData(0, 0, size, size);
+    const px = image.data;
+    for (let i = 0; i < px.length; i += 4) {
+      px[i] = px[i + 1] = px[i + 2] = 0.3 * px[i]! + 0.59 * px[i + 1]! + 0.11 * px[i + 2]!;
+      px[i + 3] = px[i + 3]! * 0.55;
+    }
+    icons[size] = image;
+  }
+  return icons;
+}
+
+async function showState(tabId: number, on: boolean): Promise<void> {
+  if (on)
+    await browser.action.setIcon({ tabId, path: Object.fromEntries(ICON_SIZES.map((size) => [size, `/icon/${size}.png`])) });
+  else await browser.action.setIcon({ tabId, imageData: await (offIcon ??= greyIcon()) });
+}
+
 export default defineBackground(() => {
   browser.runtime.onInstalled.addListener(({ reason }) => {
     queueSync();
@@ -172,12 +199,20 @@ export default defineBackground(() => {
     if (CACHE_INDEX_KEY in changes) void evictCache((changes[CACHE_INDEX_KEY]!.newValue ?? {}) as CacheIndex);
   });
 
-  browser.runtime.onMessage.addListener((message: FetchCssRequest | FetchImageRequest, sender, sendResponse) => {
-    const image = message?.type === 'sombre:fetch-image';
-    if ((!image && message?.type !== 'sombre:fetch-css') || sender.id !== browser.runtime.id) return;
-    void fetchResource(message.url, sender.url, image).then(sendResponse);
-    return true;
-  });
+  browser.runtime.onMessage.addListener(
+    (message: FetchCssRequest | FetchImageRequest | PageStateMessage, sender, sendResponse) => {
+      if (message?.type === 'sombre:state') {
+        if (sender.id === browser.runtime.id && sender.tab?.id !== undefined && sender.frameId === 0) {
+          showState(sender.tab.id, message.on).catch(() => {});
+        }
+        return;
+      }
+      const image = message?.type === 'sombre:fetch-image';
+      if ((!image && message?.type !== 'sombre:fetch-css') || sender.id !== browser.runtime.id) return;
+      void fetchResource(message.url, sender.url, image).then(sendResponse);
+      return true;
+    },
+  );
 
   browser.commands.onCommand.addListener((command, tab) => {
     if (command !== 'toggle-site' || tab?.id === undefined) return;

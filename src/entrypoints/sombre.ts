@@ -9,7 +9,7 @@ import {
   type CacheIndex,
 } from '../shared/cache.ts';
 import { fixesFor, LOCAL_FIXES_KEY, SHARED_FIXES_KEY, type Fix, type FixList } from '../shared/fixes.ts';
-import type { ContentRequest, PageState } from '../shared/messages.ts';
+import type { ContentRequest, PageState, PageStateMessage } from '../shared/messages.ts';
 import {
   findSiteKey,
   NATIVE_KEY,
@@ -139,6 +139,10 @@ export default defineUnlistedScript(async () => {
     if (settings.mode === 'schedule') switchTimer = setTimeout(() => void update(true), nextSwitch(settings.schedule) + 1000);
     const effective = resolveEffective(settings, hostname, osQuery.matches);
     await engine.setEnabled(effective.on, { animate, ignoreNative: effective.reason === 'site-dark' });
+    if (isTop) {
+      const message: PageStateMessage = { type: 'sombre:state', on: effective.on };
+      browser.runtime.sendMessage(message).catch(() => {});
+    }
     // A site previously detected as native that no longer is must get the base layer back.
     if (isTop && effective.on && effective.reason !== 'site-dark' && !engine.native) {
       void recordNative(hostname, false);
