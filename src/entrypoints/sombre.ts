@@ -116,6 +116,7 @@ export default defineUnlistedScript(async () => {
   ]);
   let settings: Settings = normalizeSettings(stored[SETTINGS_KEY]);
   engine.setColors(settings.contrast, settings.tone);
+  engine.setDimImages(settings.dimImages);
   let localFixes = stored[LOCAL_FIXES_KEY] as Record<string, Fix[]> | undefined;
   let sharedFixes = stored[SHARED_FIXES_KEY] as FixList | undefined;
   const applyFixes = () => engine.setFixes(pageFixes(hostname, localFixes, sharedFixes, settings.sharedFixes));
@@ -152,6 +153,7 @@ export default defineUnlistedScript(async () => {
     if (LOCAL_FIXES_KEY in changes || SHARED_FIXES_KEY in changes || SETTINGS_KEY in changes) applyFixes();
     if (!(SETTINGS_KEY in changes)) return;
     engine.setColors(settings.contrast, settings.tone);
+    engine.setDimImages(settings.dimImages);
     void update(true);
   });
   osQuery.addEventListener('change', () => void update(true));

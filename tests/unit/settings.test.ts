@@ -95,6 +95,7 @@ describe('normalizeSettings', () => {
       sites: { 'a.com': 'dark' },
       contrast: 'standard',
       tone: 'neutral',
+      dimImages: false,
       sharedFixes: true,
       schedule: { from: 1200, to: 420 },
     });

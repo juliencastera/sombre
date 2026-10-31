@@ -247,6 +247,10 @@ Global default, contrast level, shortcut link (`chrome://extensions/shortcuts`),
 site exceptions list, personal fixes (view / delete / export / import),
 remote fix list toggle.
 
+**Dim images** (options, off by default): `<img>` and SVG `<image>` at 80 % brightness, with
+zero specificity so a page's own filters win. Background-image photos are not dimmed: the
+element's text would dim with them.
+
 ### Welcome page
 Opened once, on first install (not for unpacked builds, so tests and development stay quiet):
 pin the button, one click per site (with the shortcut), "Fix an element". Users who cannot

@@ -26,6 +26,8 @@ export interface Settings {
   sites: Record<string, SiteState>;
   contrast: ContrastLevel;
   tone: Tone;
+  /** Dim pictures, which glare on a dark page. */
+  dimImages: boolean;
   /** Apply the shared, signed fix list on top of the user's own fixes. */
   sharedFixes: boolean;
   schedule: Schedule;
@@ -55,6 +57,7 @@ export const DEFAULT_SETTINGS: Settings = {
   sites: {},
   contrast: 'standard',
   tone: 'neutral',
+  dimImages: false,
   sharedFixes: true,
   schedule: { from: 20 * 60, to: 7 * 60 },
 };
@@ -159,7 +162,8 @@ export function normalizeSettings(value: unknown): Settings {
     to: minute(raw.schedule?.to, DEFAULT_SETTINGS.schedule.to),
   };
   const tone = TONES.includes(raw.tone!) ? raw.tone! : DEFAULT_SETTINGS.tone;
-  return { mode, sites, contrast, tone, sharedFixes, schedule };
+  const dimImages = raw.dimImages === true;
+  return { mode, sites, contrast, tone, dimImages, sharedFixes, schedule };
 }
 
 export function normalizeNative(value: unknown): Record<string, NativeVerdict> {

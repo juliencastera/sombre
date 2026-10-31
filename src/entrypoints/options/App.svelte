@@ -230,6 +230,20 @@
     </div>
     <div class="row">
       <div>
+        <h3>{t('dimImagesLabel')}</h3>
+        <p class="help">{t('dimImagesHelp')}</p>
+      </div>
+      <label class="switch">
+        <input
+          type="checkbox"
+          checked={settings.dimImages}
+          onchange={(event) => void save({ ...settings, dimImages: event.currentTarget.checked })}
+        />
+        {t('dimImagesLabel')}
+      </label>
+    </div>
+    <div class="row">
+      <div>
         <h3>{t('contrast')}</h3>
         <p class="help">{t('contrastHelp')}</p>
       </div>

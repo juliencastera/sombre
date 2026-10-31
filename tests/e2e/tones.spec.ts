@@ -20,6 +20,20 @@ const setTone = (worker: Worker, tone: string) =>
 const registeredCss = (worker: Worker) =>
   worker.evaluate(async () => (await chrome.scripting.getRegisteredContentScripts()).flatMap((script) => script.css ?? []));
 
+test('pictures are dimmed when the option is on', async ({ context, openOptions }) => {
+  const page = await context.newPage();
+  await page.goto(fixture('blend'));
+  await expect.poll(() => sombreState(page)).toBe('on');
+  const filter = () => page.evaluate(() => getComputedStyle(document.querySelector('img')!).filter);
+  expect(await filter()).toBe('none');
+
+  const options = await openOptions();
+  await options.getByRole('checkbox', { name: 'Dim images' }).check();
+  await expect.poll(filter).toBe('brightness(0.8)');
+  await options.getByRole('checkbox', { name: 'Dim images' }).uncheck();
+  await expect.poll(filter).toBe('none');
+});
+
 test('surfaces follow the chosen tone, from the base layer on', async ({ context, worker, openOptions }) => {
   const page = await context.newPage();
   await page.goto(fixture('basic'));

@@ -332,5 +332,11 @@
   },
   "toneSepia": {
     "message": "Sépia"
+  },
+  "dimImagesLabel": {
+    "message": "Atténuer les images"
+  },
+  "dimImagesHelp": {
+    "message": "Photos et illustrations s’affichent à 80 % de luminosité pour ne pas éblouir sur une page sombre."
   }
 }

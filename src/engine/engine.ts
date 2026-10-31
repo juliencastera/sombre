@@ -175,7 +175,7 @@ export class Engine {
       schedule: (scope) => this.#schedule(scope),
       discoverShadowRoots: (node) => this.#discoverShadowRoots(node),
       watchText: (node) => this.#contrast.watch(node),
-      baseRules: () => baseRules(this.#frameScheme, !this.#frameScheme && !this.#bodyPainted) + this.#fixRules,
+      baseRules: () => baseRules(this.#frameScheme, !this.#frameScheme && !this.#bodyPainted) + this.#fixRules + this.#dimRule,
     };
     this.#documentScope = this.#register(new Scope(document, this.#context));
     this.#listen();
@@ -190,6 +190,15 @@ export class Engine {
   }
 
   #tone: Tone = 'neutral';
+  #dimRule = '';
+
+  /** Dim pictures, which glare on a dark page; zero specificity so a page's own filters win. */
+  setDimImages(on: boolean): void {
+    const rule = on ? ':where(img,svg image){filter:brightness(.8)}' : '';
+    if (rule === this.#dimRule) return;
+    this.#dimRule = rule;
+    this.#documentScope.refreshBase();
+  }
 
   /** Apply a contrast level and a tone; regenerates every mirror when they change after start. */
   setColors(level: ContrastLevel, tone: Tone): void {

@@ -332,5 +332,11 @@
   },
   "toneSepia": {
     "message": "Sepia"
+  },
+  "dimImagesLabel": {
+    "message": "Dim images"
+  },
+  "dimImagesHelp": {
+    "message": "Photos and pictures are shown at 80 % brightness so they do not glare on a dark page."
   }
 }
