@@ -58,3 +58,17 @@ test('surfaces follow the chosen tone, from the base layer on', async ({ context
   await expect.poll(() => sombreState(page)).toBe('on');
   expect(rgbToOklch(parseColor(await pageColor(page))!).h).toBeCloseTo(sepia.h, 0);
 });
+
+test('pictures the site marks to invert in dark mode are inverted, dimmed or not', async ({ context, openOptions }) => {
+  const page = await context.newPage();
+  await page.goto(fixture('wiki-math'));
+  await expect.poll(() => sombreState(page)).toBe('on');
+  const filter = (selector: string) => page.evaluate((s) => getComputedStyle(document.querySelector(s)!).filter, selector);
+  await expect.poll(() => filter('.skin-invert')).toBe('invert(1) hue-rotate(180deg)');
+  expect(await filter('.photo')).toBe('none');
+
+  const options = await openOptions();
+  await options.getByRole('checkbox', { name: 'Dim images' }).check();
+  await expect.poll(() => filter('.photo')).toBe('brightness(0.8)');
+  expect(await filter('.skin-invert')).toBe('invert(1) hue-rotate(180deg)');
+});

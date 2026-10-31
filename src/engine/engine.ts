@@ -46,6 +46,14 @@ const baseRules = (frameScheme: Scheme | null, canvasBg: boolean) =>
     ? `:root[${FRAME_ATTR}]{color-scheme:${frameScheme}!important}body{color-scheme:dark!important}`
     : ':root{color-scheme:dark!important}');
 
+/**
+ * Pictures a site marks as "invert in dark mode": MediaWiki (Wikipedia and other wikis) puts
+ * `skin-invert` on its formulas, drawn as black glyphs on transparent SVG, and on diagrams.
+ * Its own night theme inverts them; with Sombre's theme they would stay black on dark. Zero
+ * specificity, and left to the site when its own dark theme is in use.
+ */
+const MARKED_INVERT = ':where(.skin-invert,.mw-invert,.skin-invert-image img){filter:invert(1) hue-rotate(180deg)}';
+
 /** Whether the page paints `<body>` (as mirrored), which then colors the canvas. */
 function bodyPainted(): boolean {
   if (!document.body) return false;
@@ -179,7 +187,12 @@ export class Engine {
       schedule: (scope) => this.#schedule(scope),
       discoverShadowRoots: (node) => this.#discoverShadowRoots(node),
       watchText: (node) => this.#contrast.watch(node),
-      baseRules: () => baseRules(this.#frameScheme, !this.#frameScheme && !this.#bodyPainted) + this.#fixRules + this.#dimRule,
+      baseRules: () =>
+        baseRules(this.#frameScheme, !this.#frameScheme && !this.#bodyPainted) +
+        this.#fixRules +
+        this.#dimRule +
+        // After dimming, which would otherwise undo it (both have zero specificity).
+        (this.native ? '' : MARKED_INVERT),
     };
     this.#documentScope = this.#register(new Scope(document, this.#context));
     this.#listen();
