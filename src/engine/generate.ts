@@ -262,8 +262,14 @@ export function generateRules(rules: CSSRuleList, options: GenerateOptions): str
     const rule = rules[i]!;
     if (rule instanceof CSSStyleRule) {
       const nested = rule.cssRules?.length ? generateRules(rule.cssRules, options) : '';
-      const media = rule.style.getPropertyValue('mix-blend-mode') !== '' && selectsMedia(rule.selectorText);
+      const blend = rule.style.getPropertyValue('mix-blend-mode');
+      const media = blend !== '' && selectsMedia(rule.selectorText);
       out += wrap(rule.selectorText, declarations(rule.style, options, false, media) + nested);
+      // The same blend on the pictures' container (a product gallery) hides them just as well.
+      if (!media && DARKENING_BLEND.test(blend.trim()) && !rule.selectorText.includes('::')) {
+        const important = rule.style.getPropertyPriority('mix-blend-mode') ? '!important' : '';
+        out += `:is(${rule.selectorText}):has(img,picture,video,canvas){mix-blend-mode:normal${important}}`;
+      }
     } else if (rule instanceof CSSMediaRule) {
       out += wrap(`@media ${rule.media.mediaText}`, generateRules(rule.cssRules, options));
     } else if (rule instanceof CSSSupportsRule) {

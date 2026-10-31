@@ -17,6 +17,15 @@
         height: 160px;
         mix-blend-mode: darken;
       }
+      /* As on trudon.com: the blend is set on the gallery that holds the photo. */
+      .gallery {
+        mix-blend-mode: multiply;
+      }
+      .gallery img {
+        display: block;
+        width: 160px;
+        height: 160px;
+      }
       /* A tint laid over a picture keeps its blend. */
       .tint {
         mix-blend-mode: multiply;
@@ -33,6 +42,12 @@
             src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16'%3E%3Crect width='16' height='16' fill='%23fff'/%3E%3Crect x='4' y='4' width='8' height='8' fill='%23d8432e'/%3E%3C/svg%3E"
           />
         </span>
+        <div class="gallery">
+          <img
+            alt="Gallery product"
+            src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16'%3E%3Crect width='16' height='16' fill='%23fff'/%3E%3Crect x='4' y='4' width='8' height='8' fill='%23d8432e'/%3E%3C/svg%3E"
+          />
+        </div>
         <span class="tint">Tint</span>
       </div>
     </main>

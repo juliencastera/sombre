@@ -25,6 +25,11 @@ test('product photos blended into a light card stay visible', async ({ context }
   expect(g! + b!).toBeLessThan(200);
   expect(Math.min(...(await pixel(page, box.x + 5, box.y + 5)))).toBeGreaterThan(240);
 
+  // Same when the blend is set on the gallery holding the photo.
+  expect(await blend(page, '.gallery')).toBe('normal');
+  const gallery = (await page.locator('.gallery img').boundingBox())!;
+  expect(Math.min(...(await pixel(page, gallery.x + 5, gallery.y + 5)))).toBeGreaterThan(240);
+
   // Blends that are not on a picture are the page's design.
   expect(await blend(page, '.tint')).toBe('multiply');
 });
