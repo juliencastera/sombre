@@ -136,7 +136,7 @@ export default defineUnlistedScript(async () => {
   let switchTimer: ReturnType<typeof setTimeout> | undefined;
   const update = async (animate: boolean) => {
     clearTimeout(switchTimer);
-    if (settings.mode === 'schedule') switchTimer = setTimeout(() => void update(true), nextSwitch(settings.schedule) + 1000);
+    if (settings.schedule.enabled) switchTimer = setTimeout(() => void update(true), nextSwitch(settings.schedule) + 1000);
     const effective = resolveEffective(settings, hostname, osQuery.matches);
     await engine.setEnabled(effective.on, { animate, ignoreNative: effective.reason === 'site-dark' });
     if (isTop) {

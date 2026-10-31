@@ -13,7 +13,7 @@ interface Fixtures {
   openPopup: (page: Page) => Promise<Page>;
   openOptions: () => Promise<Page>;
   /** The extension's stored settings. */
-  settings: () => Promise<{ mode: string; sites: Record<string, string>; contrast: string }>;
+  settings: () => Promise<{ mode: string; sites: Record<string, string>; contrast: string; schedule: { enabled: boolean } }>;
   /** Simulate the keyboard shortcut on the active tab. */
   pressShortcut: () => Promise<void>;
 }

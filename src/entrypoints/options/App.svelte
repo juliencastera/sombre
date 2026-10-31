@@ -183,17 +183,30 @@
           { value: 'auto', label: t('modeAuto') },
           { value: 'dark', label: t('modeDark') },
           { value: 'light', label: t('modeLight') },
-          { value: 'schedule', label: t('modeSchedule') },
         ] satisfies { value: Mode; label: string }[]}
         onchange={(mode) => void save({ ...settings, mode })}
       />
     </div>
-    {#if settings.mode === 'schedule'}
+    <div class="row">
+      <div>
+        <h3>{t('scheduleLabel')}</h3>
+        <p class="help">{t('scheduleHelp')}</p>
+      </div>
+      <div class="inline">
+        <label class="switch">
+          <input
+            type="checkbox"
+            checked={settings.schedule.enabled}
+            onchange={(event) =>
+              void save({ ...settings, schedule: { ...settings.schedule, enabled: event.currentTarget.checked } })}
+          />
+          {t('scheduleLabel')}
+        </label>
+      </div>
+    </div>
+    {#if settings.schedule.enabled}
       <div class="row">
-        <div>
-          <h3>{t('scheduleLabel')}</h3>
-          <p class="help">{t('scheduleHelp')}</p>
-        </div>
+        <div></div>
         <div class="inline">
           <input
             type="time"

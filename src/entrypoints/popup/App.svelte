@@ -172,11 +172,15 @@
     <footer>
       <label>
         {t('defaultMode')}
-        <select value={settings.mode} onchange={(event) => void save({ ...settings, mode: event.currentTarget.value as Mode })}>
+        <!-- Dark hours, when on, replace the default (options page). -->
+        <select
+          value={settings.mode}
+          disabled={settings.schedule.enabled}
+          onchange={(event) => void save({ ...settings, mode: event.currentTarget.value as Mode })}
+        >
           <option value="auto">{t('modeAuto')}</option>
           <option value="dark">{t('modeDark')}</option>
           <option value="light">{t('modeLight')}</option>
-          <option value="schedule">{t('modeSchedule')}</option>
         </select>
       </label>
       <button type="button" class="link-button" onclick={() => browser.runtime.openOptionsPage()}>{t('options')}</button>

@@ -47,15 +47,16 @@ describe('resolveEffective', () => {
 
 describe('schedule', () => {
   const at = (h: number, m = 0, sec = 0) => new Date(2026, 9, 31, h, m, sec);
-  const night = { from: 20 * 60, to: 7 * 60 };
+  const night = { enabled: true, from: 20 * 60, to: 7 * 60 };
 
   it('is dark between the two times, across midnight', () => {
     expect(inSchedule(night, at(19, 59))).toBe(false);
     expect(inSchedule(night, at(20))).toBe(true);
     expect(inSchedule(night, at(3))).toBe(true);
     expect(inSchedule(night, at(7))).toBe(false);
-    expect(inSchedule({ from: 9 * 60, to: 17 * 60 }, at(12))).toBe(true);
-    expect(inSchedule({ from: 9 * 60, to: 17 * 60 }, at(18))).toBe(false);
+    const day = { enabled: true, from: 9 * 60, to: 17 * 60 };
+    expect(inSchedule(day, at(12))).toBe(true);
+    expect(inSchedule(day, at(18))).toBe(false);
   });
 
   it('counts down to the next switch', () => {
@@ -64,10 +65,12 @@ describe('schedule', () => {
     expect(nextSwitch(night, at(12))).toBe(8 * 3_600_000);
   });
 
-  it('sets the default of every site', () => {
-    const s = settings({ mode: 'schedule', schedule: night });
+  it('replaces the default of every site while enabled', () => {
+    const s = settings({ mode: 'light', schedule: night });
     expect(resolveEffective(s, 'a.com', false, at(22))).toEqual({ on: true, reason: 'schedule-dark' });
     expect(resolveEffective(s, 'a.com', true, at(12))).toEqual({ on: false, reason: 'schedule-light' });
+    const off = settings({ mode: 'light', schedule: { ...night, enabled: false } });
+    expect(resolveEffective(off, 'a.com', false, at(22))).toEqual({ on: false, reason: 'mode-light' });
   });
 });
 
@@ -97,11 +100,10 @@ describe('normalizeSettings', () => {
       tone: 'neutral',
       dimImages: false,
       sharedFixes: true,
-      schedule: { from: 1200, to: 420 },
+      schedule: { enabled: false, from: 1200, to: 420 },
     });
-    expect(normalizeSettings({ mode: 'schedule', schedule: { from: 1500, to: 60 } })).toMatchObject({
-      mode: 'schedule',
-      schedule: { from: 1200, to: 60 },
+    expect(normalizeSettings({ schedule: { enabled: true, from: 1500, to: 60 } })).toMatchObject({
+      schedule: { enabled: true, from: 1200, to: 60 },
     });
     expect(normalizeSettings(undefined)).toEqual(DEFAULT_SETTINGS);
     expect(normalizeSettings({ contrast: 'high' }).contrast).toBe('high');

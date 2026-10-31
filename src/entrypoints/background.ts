@@ -19,7 +19,7 @@ const MAX_IMAGE_BYTES = 512 * 1024;
  * the manifest so the browser injects it before first paint *only* where dark
  * mode applies: never-sites and sites with a native dark theme are excluded,
  * and "auto" mode uses a prefers-color-scheme media query. No async lookup
- * stands between navigation and the first dark frame. In "schedule" mode the
+ * stands between navigation and the first dark frame. With dark hours the
  * dark base layer is registered while the schedule is dark, and an alarm swaps
  * it at the next switch.
  */
@@ -34,11 +34,11 @@ async function syncRegistrations(): Promise<void> {
 
   const scripts: Parameters<typeof browser.scripting.registerContentScripts>[0] = [];
   const common = { runAt: 'document_start', allFrames: true, matchOriginAsFallback: true, persistAcrossSessions: true } as const;
-  if (settings.mode === 'schedule') {
+  if (settings.schedule.enabled) {
     void browser.alarms.create(SCHEDULE_ALARM, { when: Date.now() + nextSwitch(settings.schedule) });
   } else void browser.alarms.clear(SCHEDULE_ALARM);
-  const dark = settings.mode === 'dark' || (settings.mode === 'schedule' && inSchedule(settings.schedule));
-  if (dark || settings.mode === 'auto') {
+  const dark = settings.schedule.enabled ? inSchedule(settings.schedule) : settings.mode === 'dark';
+  if (dark || (!settings.schedule.enabled && settings.mode === 'auto')) {
     scripts.push({
       ...common,
       id: BASE_ID,

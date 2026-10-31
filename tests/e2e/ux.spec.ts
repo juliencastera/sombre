@@ -116,7 +116,8 @@ test('the schedule turns sites dark during its hours only', async ({ context, op
   await expect.poll(() => sombreState(page)).toBe('on');
 
   const options = await openOptions();
-  await options.getByRole('radiogroup', { name: 'Default for all sites' }).getByRole('radio', { name: 'Schedule' }).click();
+  await expect(options.getByLabel('Dark from')).toHaveCount(0);
+  await options.getByRole('checkbox', { name: 'Dark hours' }).check();
   const time = (minutes: number) => {
     const m = (minutes + 1440) % 1440;
     return `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
@@ -125,7 +126,7 @@ test('the schedule turns sites dark during its hours only', async ({ context, op
   // Hours that exclude now: the page turns light, open or reloaded.
   await options.getByLabel('Dark from').fill(time(now + 120));
   await options.getByLabel('Dark until').fill(time(now + 240));
-  await expect.poll(async () => (await settings()).mode).toBe('schedule');
+  await expect.poll(async () => (await settings()).schedule.enabled).toBe(true);
   await expect.poll(() => sombreState(page)).toBe('off');
   await page.reload();
   await expect.poll(() => sombreState(page)).toBe('off');

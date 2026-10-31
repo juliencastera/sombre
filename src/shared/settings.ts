@@ -1,8 +1,12 @@
-/** Global default (spec §7). `auto` follows the OS color scheme, `schedule` the clock. */
-export type Mode = 'auto' | 'dark' | 'light' | 'schedule';
+/** Global default (spec §7). `auto` follows the OS color scheme. */
+export type Mode = 'auto' | 'dark' | 'light';
 
-/** Dark from `from` to `to`, in minutes after local midnight; spans midnight when `from` > `to`. */
+/**
+ * Optional dark hours, which replace the global default while enabled: dark from
+ * `from` to `to`, in minutes after local midnight; spans midnight when `from` > `to`.
+ */
 export interface Schedule {
+  enabled: boolean;
   from: number;
   to: number;
 }
@@ -59,7 +63,7 @@ export const DEFAULT_SETTINGS: Settings = {
   tone: 'neutral',
   dimImages: false,
   sharedFixes: true,
-  schedule: { from: 20 * 60, to: 7 * 60 },
+  schedule: { enabled: false, from: 20 * 60, to: 7 * 60 },
 };
 
 export type Reason =
@@ -108,21 +112,18 @@ export function resolveEffective(settings: Settings, hostname: string, osDark: b
   const state = key ? settings.sites[key] : undefined;
   if (state === 'dark') return { on: true, reason: 'site-dark' };
   if (state === 'never') return { on: false, reason: 'site-never' };
-  if (settings.mode === 'dark') return { on: true, reason: 'mode-dark' };
-  if (settings.mode === 'light') return { on: false, reason: 'mode-light' };
-  if (settings.mode === 'schedule') {
+  if (settings.schedule.enabled) {
     return inSchedule(settings.schedule, now) ? { on: true, reason: 'schedule-dark' } : { on: false, reason: 'schedule-light' };
   }
+  if (settings.mode === 'dark') return { on: true, reason: 'mode-dark' };
+  if (settings.mode === 'light') return { on: false, reason: 'mode-light' };
   return osDark ? { on: true, reason: 'auto-dark' } : { on: false, reason: 'auto-light' };
 }
 
 /** Whether the global default (ignoring site exceptions) is dark. */
 export function defaultIsOn(settings: Settings, osDark: boolean): boolean {
-  return (
-    settings.mode === 'dark' ||
-    (settings.mode === 'auto' && osDark) ||
-    (settings.mode === 'schedule' && inSchedule(settings.schedule))
-  );
+  if (settings.schedule.enabled) return inSchedule(settings.schedule);
+  return settings.mode === 'dark' || (settings.mode === 'auto' && osDark);
 }
 
 /**
@@ -148,7 +149,7 @@ export function sitePatterns(key: string): string[] {
 
 export function normalizeSettings(value: unknown): Settings {
   const raw = (value ?? {}) as Partial<Settings>;
-  const mode = ['auto', 'dark', 'light', 'schedule'].includes(raw.mode as string) ? raw.mode! : DEFAULT_SETTINGS.mode;
+  const mode = raw.mode === 'dark' || raw.mode === 'light' || raw.mode === 'auto' ? raw.mode : DEFAULT_SETTINGS.mode;
   const sites: Record<string, SiteState> = {};
   for (const [key, state] of Object.entries(raw.sites ?? {})) {
     if (state === 'dark' || state === 'never') sites[key] = state;
@@ -158,6 +159,7 @@ export function normalizeSettings(value: unknown): Settings {
   const minute = (value: unknown, fallback: number) =>
     Number.isInteger(value) && (value as number) >= 0 && (value as number) < DAY ? (value as number) : fallback;
   const schedule = {
+    enabled: raw.schedule?.enabled === true,
     from: minute(raw.schedule?.from, DEFAULT_SETTINGS.schedule.from),
     to: minute(raw.schedule?.to, DEFAULT_SETTINGS.schedule.to),
   };
