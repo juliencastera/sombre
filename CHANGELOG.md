@@ -1,5 +1,27 @@
 # Changelog
 
+## [1.1.0](https://github.com/juliencastera/sombre/compare/v1.0.2...v1.1.0) (2026-11-01)
+
+
+### Features
+
+* add a schedule mode ([9167291](https://github.com/juliencastera/sombre/commit/9167291d08fce945a3452832f7256d16e88da499))
+* add an option to dim images ([1c82c76](https://github.com/juliencastera/sombre/commit/1c82c765a9c182c9221a0617be0f741b1f435202))
+* ask why on uninstall ([e8a94ea](https://github.com/juliencastera/sombre/commit/e8a94ea4bde2cbe090ef6f37054cbc6912bc50d5))
+* grey out the toolbar icon where Sombre is off ([352fbdc](https://github.com/juliencastera/sombre/commit/352fbdc913e55dd762bc83ac69dee221d04980e1))
+* let users pick the tone of dark surfaces ([c7f91f5](https://github.com/juliencastera/sombre/commit/c7f91f5338d743e4162d46b77b12e91247547f69))
+* **manifest:** put the main keywords in the store name ([9fd682b](https://github.com/juliencastera/sombre/commit/9fd682bc6113dad6e473e014d21ad9798fe090a6))
+* open a welcome page on first install ([8f9614d](https://github.com/juliencastera/sombre/commit/8f9614d4aa00efd537b60d61c7433b567c74d741))
+* **popup:** ask once for a store review after two weeks ([cdfe87d](https://github.com/juliencastera/sombre/commit/cdfe87d965a1517ae7286d805ebd842d0d1cd893))
+
+
+### Bug Fixes
+
+* **engine:** darken var() backgrounds split by a later longhand ([e2b8288](https://github.com/juliencastera/sombre/commit/e2b82880eb646068e5667d4596a96aa6e4c63d03))
+* **engine:** invert pictures the site marks for dark mode ([4a6306d](https://github.com/juliencastera/sombre/commit/4a6306d0364172f1a9d7ec14ad55b0cfdda50c02))
+* **engine:** leave icons alone where the page inverts them itself ([0d2dcf2](https://github.com/juliencastera/sombre/commit/0d2dcf20d753d4d64913037c6b302b0b72611867))
+* **engine:** show pictures whose gallery is blended into the card ([2b628af](https://github.com/juliencastera/sombre/commit/2b628af6e4fe77ca922d8be5c28ef5681884a654))
+
 ## [1.0.2](https://github.com/juliencastera/sombre/compare/v1.0.1...v1.0.2) (2026-10-30)
 
 
